@@ -22,7 +22,7 @@ var validSender = ""
 func main() {
 	/* read env settings */
 	validSender = os.Getenv("USERBOT_SENDER")
-	fmt.Printf("validSender: %s\n", validSender)
+	fmt.Printf("validSender: '%s'\n", validSender)
 	/* lauch http server */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
@@ -61,7 +61,7 @@ func getSender(body string) (string, error) {
 	senderRE := regexp.MustCompile("from=(.*)&")
 	sender := senderRE.FindString(body)[5:]
 	if sender != validSender {
-		return "", fmt.Errorf("Illegal sender: %s", sender)
+		return "", fmt.Errorf("Illegal sender: '%s'", sender)
 	}
 	return sender, nil
 }
@@ -78,5 +78,5 @@ func createUsers(recipients []string) {
 }
 
 func illegalSenderAlert(err error) {
-	log.Fatal("illegalSenderAlert", err)
+	log.Fatal(err)
 }
