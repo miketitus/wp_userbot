@@ -3,8 +3,8 @@ package main
 import (
 	"io/ioutil"
 	"log"
-	"net/QueryUnescape"
 	"net/http"
+	"net/url"
 )
 
 func main() {
@@ -22,14 +22,14 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("ioutil.ReadAll", err1)
 	}
 	bodyString := string(bodyBytes)
-	body, err2 := QueryUnescape(bodyString)
+	body, err2 := url.QueryUnescape(bodyString)
 	if err2 != nil {
 		log.Fatal("QueryUnescape", err2)
 	}
 	log.Println("********")
 	log.Println(req.Header)
 	log.Println("********")
-	log.Println(bodyString)
+	log.Println(body)
 	log.Println("********")
 	w.WriteHeader(http.StatusOK)
 }
