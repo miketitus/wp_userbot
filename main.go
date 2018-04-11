@@ -37,15 +37,19 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	/* decode body */
-	bodyBytes, err1 := ioutil.ReadAll(req.Body)
-	if err1 != nil {
-		log.Fatal("ioutil.ReadAll", err1)
+	bodyBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Fatal("ioutil.ReadAll", err)
 	}
-	bodyString := string(bodyBytes)
-	body, err2 := url.QueryUnescape(bodyString)
-	if err2 != nil {
-		log.Fatal("QueryUnescape", err2)
+	rawBody := string(bodyBytes)
+	rawBody, err = url.QueryUnescape(bodyString)
+	if err != nil {
+		log.Fatal("QueryUnescape", err)
 	}
+
+	/* trim bulk of unused payload which interferes with regex processing */
+	i := strings.Index(rawBody, "&X")
+	body := rawBody[0:i]
 
 	sender, err3 := getSender(body)
 	if err3 != nil {
