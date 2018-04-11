@@ -42,7 +42,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("ioutil.ReadAll", err)
 	}
 	rawBody := string(bodyBytes)
-	rawBody, err = url.QueryUnescape(bodyString)
+	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
 		log.Fatal("QueryUnescape", err)
 	}
