@@ -50,7 +50,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 
 	/* trim bulk of unused payload which interferes with regex processing */
 	var body string
-	i := strings.Index(rawBody, "X-Mailgun")
+	i := strings.Index(rawBody, "Content-Type")
 	fmt.Printf("i = %d\n", i)
 	if i < 0 {
 		body = rawBody
