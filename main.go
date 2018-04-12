@@ -17,12 +17,12 @@ type user struct {
 	email string
 }
 
-var validSender = ""
+var validSender string
 
 func main() {
 	/* read env settings */
 	validSender = os.Getenv("USERBOT_SENDER")
-	/* lauch http server */
+	/* launch http server */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
@@ -33,36 +33,38 @@ func main() {
 func parseEmail(w http.ResponseWriter, req *http.Request) {
 	/* acknowledge POST from Mailgun  */
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(250) // SMTP OK
 
 	/* decode body */
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Fatal("ioutil.ReadAll - ", err)
+		log.Printf("ioutil.ReadAll - %s\n", err)
 	}
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
-		log.Fatal("url.QueryUnescape - ", err)
+		log.Printf("url.QueryUnescape - %s\n", err)
 	}
 
 	/* trim bulk of unused payload which interferes with regex processing */
 	var body string
 	i := strings.Index(rawBody, "Content-Type")
 	if i < 0 {
+		// TODO
 		body = rawBody
 	} else {
 		body = rawBody[0:i]
 	}
 
-	sender, err3 := getSender(body)
-	if err3 != nil {
-		illegalSenderAlert(err3)
+	var sender string
+	sender, err = getSender(body)
+	if err != nil {
+		illegalSenderAlert(err)
 	}
-	fmt.Printf("sender = %s\n", sender)
+	log.Printf("sender = %s\n", sender)
 
 	recipients := getRecipients(body)
-	fmt.Printf("recipients = %s\n", recipients)
+	log.Printf("recipients = %s\n", recipients)
 }
 
 func getSender(body string) (string, error) {
@@ -87,5 +89,5 @@ func createUsers(recipients []string) {
 }
 
 func illegalSenderAlert(err error) {
-	log.Fatal(err)
+	log.Println(err)
 }
