@@ -77,7 +77,7 @@ func getSender(body string) (string, error) {
 }
 
 func getRecipients(body string) []string {
-	recipientRE := regexp.MustCompile("To=([^&]*)&")
+	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
 	recipients := strings.Split(raw[3:], ", ")
 	return recipients
