@@ -49,7 +49,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 
 	/* trim bulk of unused payload which interferes with regex processing */
 	var body string
-	i := strings.Index(rawBody, "Mailgun")
+	i := strings.Index(rawBody, "X-Mailgun")
 	fmt.Printf("i = %d\n", i)
 	if i < 0 {
 		body = rawBody
@@ -69,7 +69,9 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 
 func getSender(body string) (string, error) {
 	senderRE := regexp.MustCompile("from=([^&]*)")
-	sender := senderRE.FindString(body)[5:]
+	raw := senderRE.FindString(body)
+	fmt.Printf("rawSender='%s'\n", raw)
+	sender := raw[5:]
 	if sender != validSender {
 		return "", fmt.Errorf("Illegal sender: '%s'", sender)
 	}
@@ -79,6 +81,7 @@ func getSender(body string) (string, error) {
 func getRecipients(body string) []string {
 	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
+	fmt.Printf("rawRecipient='%s'\n", raw)
 	recipients := strings.Split(raw[3:], ", ")
 	return recipients
 }
