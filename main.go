@@ -27,7 +27,7 @@ func main() {
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
 	mgValidSender = os.Getenv("MG_VALID_SENDER")
-	/* launch http server */
+	/* listen for email POSTs from Mailgun */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
@@ -38,20 +38,21 @@ func main() {
 func parseEmail(w http.ResponseWriter, req *http.Request) {
 	/* acknowledge POST from Mailgun  */
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(250) // SMTP OK
-
-	log.Printf("Got: %s\n", req.Header)
+	w.WriteHeader(250)                  // SMTP OK
+	log.Printf("Got: %s\n", req.Header) // TODO
 
 	/* decode body */
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll - %s\n", err)
+		emailAlert("Parse Error", err.Error())
 		return
 	}
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
 		log.Printf("url.QueryUnescape - %s\n", err)
+		emailAlert("Parse Error", err.Error())
 		return
 	}
 
@@ -59,8 +60,8 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	var body string
 	i := strings.Index(rawBody, "Content-Type")
 	if i < 0 {
-		// TODO
 		body = rawBody
+		emailAlert("Parse Error", body)
 	} else {
 		body = rawBody[0:i]
 	}
@@ -68,7 +69,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	var sender string
 	sender, err = getSender(body)
 	if err != nil {
-		illegalSenderAlert(err)
+		emailAlert("Illegal Sender", err.Error())
 		return
 	}
 	log.Printf("sender = %s\n", sender)
@@ -82,7 +83,7 @@ func getSender(body string) (string, error) {
 	raw := senderRE.FindString(body)
 	sender := raw[5:]
 	if sender != mgValidSender {
-		return "", fmt.Errorf("Illegal sender: '%s'", sender)
+		return sender, fmt.Errorf("Illegal sender: '%s'", sender)
 	}
 	return sender, nil
 }
@@ -95,18 +96,17 @@ func getRecipients(body string) []string {
 }
 
 func createUsers(recipients []string) {
-
 }
 
-func illegalSenderAlert(e error) {
-	log.Println(e)
+func emailAlert(subject string, body string) {
+	log.Println(subject)
 	if mg == nil {
 		mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
 	}
 	message := mg.NewMessage(
 		"admin@ncwawood.org",
-		"userbot: Illegal Sender",
-		e.Error(),
+		"userbot: "+subject,
+		body,
 		"mike@mike-titus.com")
 	_, _, err := mg.Send(message)
 	if err != nil {
