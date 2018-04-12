@@ -22,7 +22,6 @@ var validSender = ""
 func main() {
 	/* read env settings */
 	validSender = os.Getenv("USERBOT_SENDER")
-	fmt.Printf("validSender: '%s'\n", validSender)
 	/* lauch http server */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
@@ -46,18 +45,15 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatal("url.QueryUnescape - ", err)
 	}
-	fmt.Printf("\n%s\n", rawBody)
 
 	/* trim bulk of unused payload which interferes with regex processing */
 	var body string
 	i := strings.Index(rawBody, "Content-Type")
-	fmt.Printf("i = %d\n", i)
 	if i < 0 {
 		body = rawBody
 	} else {
 		body = rawBody[0:i]
 	}
-	fmt.Printf("body='%s'\n", body)
 
 	sender, err3 := getSender(body)
 	if err3 != nil {
@@ -72,7 +68,6 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 func getSender(body string) (string, error) {
 	senderRE := regexp.MustCompile("from=([^&]*)")
 	raw := senderRE.FindString(body)
-	fmt.Printf("rawSender='%s'\n", raw)
 	sender := raw[5:]
 	if sender != validSender {
 		return "", fmt.Errorf("Illegal sender: '%s'", sender)
@@ -83,7 +78,6 @@ func getSender(body string) (string, error) {
 func getRecipients(body string) []string {
 	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
-	fmt.Printf("rawRecipient='%s'\n", raw)
 	recipients := strings.Split(raw[3:], ", ")
 	return recipients
 }
