@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/mailgun/mailgun-go.v1"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,11 +18,15 @@ type user struct {
 	email string
 }
 
-var validSender string
+var mgAPIKey, mgDomain, mgPublicAPIKey, mgValidSender string
+var mg mailgun.Mailgun
 
 func main() {
 	/* read env settings */
-	validSender = os.Getenv("USERBOT_SENDER")
+	mgAPIKey = os.Getenv("MG_API_KEY")
+	mgDomain = os.Getenv("MG_DOMAIN")
+	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
+	mgValidSender = os.Getenv("MG_VALID_SENDER")
 	/* launch http server */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
@@ -35,15 +40,19 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(250) // SMTP OK
 
+	log.Printf("Got: %s\n", req.Header)
+
 	/* decode body */
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll - %s\n", err)
+		return
 	}
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
 		log.Printf("url.QueryUnescape - %s\n", err)
+		return
 	}
 
 	/* trim bulk of unused payload which interferes with regex processing */
@@ -60,6 +69,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	sender, err = getSender(body)
 	if err != nil {
 		illegalSenderAlert(err)
+		return
 	}
 	log.Printf("sender = %s\n", sender)
 
@@ -71,7 +81,7 @@ func getSender(body string) (string, error) {
 	senderRE := regexp.MustCompile("from=([^&]*)")
 	raw := senderRE.FindString(body)
 	sender := raw[5:]
-	if sender != validSender {
+	if sender != mgValidSender {
 		return "", fmt.Errorf("Illegal sender: '%s'", sender)
 	}
 	return sender, nil
@@ -88,6 +98,18 @@ func createUsers(recipients []string) {
 
 }
 
-func illegalSenderAlert(err error) {
-	log.Println(err)
+func illegalSenderAlert(e error) {
+	log.Println(e)
+	if mg == nil {
+		mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
+	}
+	message := mg.NewMessage(
+		"admin@ncwawood.org",
+		"userbot: Illegal Sender",
+		e.Error(),
+		"mike@mike-titus.com")
+	_, _, err := mg.Send(message)
+	if err != nil {
+		log.Println(err)
+	}
 }
