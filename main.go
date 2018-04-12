@@ -46,6 +46,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatal("url.QueryUnescape - ", err)
 	}
+	fmt.Printf("\n%s\n", rawBody)
 
 	/* trim bulk of unused payload which interferes with regex processing */
 	var body string
@@ -56,6 +57,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	} else {
 		body = rawBody[0:i]
 	}
+	fmt.Printf("body='%s'\n", body)
 
 	sender, err3 := getSender(body)
 	if err3 != nil {
