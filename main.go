@@ -27,7 +27,7 @@ func main() {
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
-		log.Fatal("ListenAndServe", err)
+		log.Fatal("http.ListenAndServe", err)
 	}
 }
 
@@ -39,17 +39,23 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	/* decode body */
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Fatal("ioutil.ReadAll", err)
+		log.Fatal("ioutil.ReadAll - ", err)
 	}
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
-		log.Fatal("QueryUnescape", err)
+		log.Fatal("url.QueryUnescape - ", err)
 	}
 
 	/* trim bulk of unused payload which interferes with regex processing */
-	i := strings.Index(rawBody, "&X")
-	body := rawBody[0:i]
+	var body string
+	i := strings.Index(rawBody, "Mailgun")
+	fmt.Printf("i = %d", i)
+	if i < 0 {
+		body = rawBody
+	} else {
+		body = rawBody[0:i]
+	}
 
 	sender, err3 := getSender(body)
 	if err3 != nil {
