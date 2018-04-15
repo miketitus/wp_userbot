@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+type result struct {
+	status string
+	body   string
+}
+
 type user struct {
 	first string
 	last  string
