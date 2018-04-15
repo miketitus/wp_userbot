@@ -12,11 +12,6 @@ import (
 	"strings"
 )
 
-type result struct {
-	status string
-	body   string
-}
-
 type user struct {
 	first string
 	last  string
@@ -50,14 +45,14 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll - %s\n", err)
-		emailAlert("Parse Error", err.Error())
+		emailResults("Parse Error", err.Error())
 		return
 	}
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
 		log.Printf("url.QueryUnescape - %s\n", err)
-		emailAlert("Parse Error", err.Error())
+		emailResults("Parse Error", err.Error())
 		return
 	}
 
@@ -66,21 +61,22 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	i := strings.Index(rawBody, "Content-Type")
 	if i < 0 {
 		body = rawBody
-		emailAlert("Parse Error", body)
+		emailResults("Parse Error", body)
 	} else {
 		body = rawBody[0:i]
 	}
 
+	// validate sender
 	var sender string
 	sender, err = getSender(body)
 	if err != nil {
-		emailAlert("Illegal Sender", err.Error())
+		emailResults("Illegal Sender", err.Error())
 		return
 	}
 	log.Printf("sender = %s\n", sender)
 
-	recipients := getRecipients(body)
-	log.Printf("recipients = %s\n", recipients)
+	// turn recipients into users
+	parseRecipients(body)
 }
 
 func getSender(body string) (string, error) {
@@ -93,17 +89,39 @@ func getSender(body string) (string, error) {
 	return sender, nil
 }
 
-func getRecipients(body string) []string {
+func parseRecipients(body string) {
+	var resultBody []string
+	resultSubject := "Success"
 	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
 	recipients := strings.Split(raw[3:], ", ")
-	return recipients
+	log.Printf("recipients = %s\n", recipients)
+	for _, r := range recipients {
+		fields := strings.Fields(r)
+		if len(fields) == 3 {
+			// valid structure
+			if fields[2] = "<mike@mike-titus.com>" {
+				continue // skip
+			}
+			for _, f := range fields {
+				log.Printf("%s ", f)
+				resultBody = append(resultBody, fmt.Sprintf("Success: %s", r))
+			}
+		} else if fields[0] == "userbot" || fields[0] == "<userbot@ncwawood.org>" {
+			// that's me! -- ignore
+		} else {
+			// error TODO
+			resultBody = append(resultBody, fmt.Sprintf("Invalid format: %s", r))
+			resultSubject = "Error(s) found"
+		}
+	}
+	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
 
-func createUsers(recipients []string) {
-}
+//func createUser(first, last, email string) {
+//}
 
-func emailAlert(subject string, body string) {
+func emailResults(subject string, body string) {
 	log.Println(subject)
 	if mg == nil {
 		mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
