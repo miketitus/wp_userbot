@@ -68,23 +68,29 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 		body = rawBody[0:i]
 	}
 
-	if !isValidSender(body) {
+	if !IsValidSender(body) {
 		// recipient hit "reply to all", so ignore
+		emailResults("Illegal Sender", body) // TODO
 		return
 	}
 	parseRecipients(body)
 }
 
-func isValidSender(body string) bool {
+func IsValidSender(body string) bool {
+	var sender string
 	senderRE := regexp.MustCompile("from=([^&]*)")
 	raw := senderRE.FindString(body)
-	sender := raw[5:]
+	if raw == "" {
+		// this should never happen, but keep on truckin' anyway
+		sender = raw
+	} else {
+		sender = raw[5:]
+	}
 	for _, s := range mgValidSenders {
 		if s == sender {
 			return true
 		}
 	}
-	emailResults("Illegal Sender", sender)
 	return false
 }
 
@@ -101,7 +107,7 @@ func parseRecipients(body string) {
 			// valid structure
 			if fields[2] == "<mike@mike-titus.com>" {
 				continue // skip
-			} else if isValidEmail(fields[2]) {
+			} else if IsValidEmail(fields[2]) {
 				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
 			} else {
 				userResult := createUser(fields[0], fields[1], fields[2])
@@ -118,9 +124,9 @@ func parseRecipients(body string) {
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
 
-func isValidEmail(email string) bool {
+func IsValidEmail(email string) bool {
 	// mimimal validation regex, could be a lot more complex
-	emailRE := regexp.MustCompile(".*@.*\\..*")
+	emailRE := regexp.MustCompile("[^@]+@[^@]+\\..+")
 	return emailRE.FindStringIndex(email) != nil
 }
 
