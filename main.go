@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/mailgun/mailgun-go.v1"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"gopkg.in/mailgun/mailgun-go.v1"
 )
 
 type user struct {
@@ -18,7 +19,8 @@ type user struct {
 	email string
 }
 
-var mgAPIKey, mgDomain, mgPublicAPIKey, mgValidSender string
+var mgAPIKey, mgDomain, mgPublicAPIKey string
+var mgValidSenders []string
 var mg mailgun.Mailgun
 
 func main() {
@@ -26,7 +28,7 @@ func main() {
 	mgAPIKey = os.Getenv("MG_API_KEY")
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
-	mgValidSender = os.Getenv("MG_VALID_SENDER")
+	mgValidSenders = strings.Split(os.Getenv("MG_VALID_SENDERS"), ", ")
 	/* listen for email POSTs from Mailgun */
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
@@ -66,27 +68,24 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 		body = rawBody[0:i]
 	}
 
-	// validate sender
-	var sender string
-	sender, err = getSender(body)
-	if err != nil {
-		emailResults("Illegal Sender", err.Error())
+	if !isValidSender(body) {
+		// recipient hit "reply to all", so ignore
 		return
 	}
-	log.Printf("sender = %s\n", sender)
-
-	// turn recipients into users
 	parseRecipients(body)
 }
 
-func getSender(body string) (string, error) {
+func isValidSender(body string) bool {
 	senderRE := regexp.MustCompile("from=([^&]*)")
 	raw := senderRE.FindString(body)
 	sender := raw[5:]
-	if sender != mgValidSender {
-		return sender, fmt.Errorf("Illegal sender: '%s'", sender)
+	for _, s := range mgValidSenders {
+		if s == sender {
+			return true
+		}
 	}
-	return sender, nil
+	emailResults("Illegal Sender", sender)
+	return false
 }
 
 func parseRecipients(body string) {
@@ -119,14 +118,14 @@ func parseRecipients(body string) {
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
 
-func createUser(first, last, email string) string {
-	return "success"
-}
-
 func isValidEmail(email string) bool {
 	// mimimal validation regex, could be a lot more complex
 	emailRE := regexp.MustCompile(".*@.*\\..*")
 	return emailRE.FindStringIndex(email) != nil
+}
+
+func createUser(first, last, email string) string {
+	return "success"
 }
 
 func emailResults(subject string, body string) {
@@ -138,7 +137,7 @@ func emailResults(subject string, body string) {
 		"admin@ncwawood.org",
 		"userbot: "+subject,
 		body,
-		"mike@mike-titus.com")
+		"mike@mike-titus.com") // TODO
 	_, _, err := mg.Send(message)
 	if err != nil {
 		log.Println(err)
