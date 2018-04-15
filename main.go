@@ -100,12 +100,13 @@ func parseRecipients(body string) {
 		fields := strings.Fields(r)
 		if len(fields) == 3 {
 			// valid structure
-			if fields[2] = "<mike@mike-titus.com>" {
+			if fields[2] == "<mike@mike-titus.com>" {
 				continue // skip
-			}
-			for _, f := range fields {
-				log.Printf("%s ", f)
-				resultBody = append(resultBody, fmt.Sprintf("Success: %s", r))
+			} else if isValidEmail(fields[2]) {
+				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
+			} else {
+				userResult := createUser(fields[0], fields[1], fields[2])
+				resultBody = append(resultBody, fmt.Sprintf("%s: %s", userResult, r))
 			}
 		} else if fields[0] == "userbot" || fields[0] == "<userbot@ncwawood.org>" {
 			// that's me! -- ignore
@@ -118,8 +119,15 @@ func parseRecipients(body string) {
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
 
-//func createUser(first, last, email string) {
-//}
+func createUser(first, last, email string) string {
+	return "success"
+}
+
+func isValidEmail(email string) bool {
+	// mimimal validation regex, could be a lot more complex
+	emailRE := regexp.MustCompile(".*@.*\\..*")
+	return emailRE.FindStringIndex(email) != nil
+}
 
 func emailResults(subject string, body string) {
 	log.Println(subject)
