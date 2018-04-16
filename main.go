@@ -13,23 +13,19 @@ import (
 	"gopkg.in/mailgun/mailgun-go.v1"
 )
 
-type user struct {
-	first string
-	last  string
-	email string
-}
-
-var mgAPIKey, mgDomain, mgPublicAPIKey, mgUserBot string
 var mgAdmins []string
+var mgAPIKey, mgDomain, mgPublicAPIKey, mgUserBot string
 var mg mailgun.Mailgun
 
 func main() {
 	// read env settings
+	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
 	mgAPIKey = os.Getenv("MG_API_KEY")
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
 	mgUserBot = os.Getenv("MG_USERBOT")
-	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
+	// setup WordPress
+	initWordPress()
 	// listen for email POSTs from Mailgun
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
