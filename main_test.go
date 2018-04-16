@@ -4,14 +4,14 @@ import (
 	"testing"
 )
 
-func TestIsAdmin(t *testing.T) {
+func TestSenderIsAdmin(t *testing.T) {
 	for _, s := range mgAdmins {
-		if !isAdmin(s) {
+		if !senderIsAdmin(s) {
 			t.Errorf("'%s' was declared invalid", s)
 		}
 	}
 	s := "Invalid"
-	if isAdmin(s) {
+	if senderIsAdmin(s) {
 		t.Errorf("'%s' was declared valid", s)
 	}
 }
