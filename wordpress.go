@@ -2,20 +2,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/robbiet480/go-wordpress"
 )
 
-var wpUser, wpPassword, wpBaseURL string
+var wpBaseURL, wpPassword, wpUser string
 var wpClient *wordpress.Client
 var wpContext context.Context
 
 func initWordPress() {
-	wpUser = os.Getenv("WP_USER")
+	wpBaseURL = fmt.Sprintf("https://%s/", os.Getenv("WP_BASE_URL"))
 	wpPassword = os.Getenv("WP_PASSWORD")
-	wpBaseURL = os.Getenv("WP_BASE_URL")
+	wpUser = os.Getenv("WP_USER")
 	wpContext = context.Background()
 	transport := wordpress.BasicAuthTransport{
 		Username: wpUser,
