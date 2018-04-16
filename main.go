@@ -69,16 +69,16 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 		body = rawBody[0:i]
 	}
 
-	if !isAdmin(body) {
-		// recipient hit "reply to all", so ignore
-		emailResults("Illegal Sender", body) // TODO
+	if !senderIsAdmin(body) {
+		// ignore: spam, or a recipient hit "reply to all"
+		emailResults("Illegal Sender", rawBody) // TODO
 		return
 	}
 	parseRecipients(body)
 }
 
-// isAdmin verifies that the decoded email message came from an approved email address.
-func isAdmin(body string) bool {
+// senderIsAdmin verifies that the decoded email message came from an approved email address.
+func senderIsAdmin(body string) bool {
 	var sender string
 	senderRE := regexp.MustCompile("from=([^&]*)")
 	raw := senderRE.FindString(body)
@@ -118,7 +118,7 @@ func parseRecipients(body string) {
 			continue // ignore
 		} else if len(fields) == 3 {
 			// valid structure
-			if isAdmin(fields[2]) {
+			if senderIsAdmin(fields[2]) {
 				continue // admin email, skip
 			} else if isValidEmail(fields[2]) {
 				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
@@ -127,7 +127,7 @@ func parseRecipients(body string) {
 				resultBody = append(resultBody, fmt.Sprintf("%s: %s", userResult, r))
 			}
 		} else {
-			// TODO error
+			// error
 			resultBody = append(resultBody, fmt.Sprintf("Invalid format: %s", r))
 			resultSubject = "Error(s) found"
 		}
@@ -152,13 +152,16 @@ func emailResults(subject string, body string) {
 	if mg == nil {
 		mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
 	}
-	message := mg.NewMessage(
-		"no-reply@ncwawood.org",
-		"userbot: "+subject,
-		body,
-		os.Getenv("MG_ADMINS"))
+	from := "no-reply@" + mgDomain
+	subject = "userbot: " + subject
+	to := os.Getenv("MG_ADMINS")
+	message := mg.NewMessage(from, subject, body, to)
 	_, _, err := mg.Send(message)
 	if err != nil {
-		log.Println(err)
+		log.Printf("mg.NewMessage: %s\n", err)
+		log.Printf("from: %s\n", from)
+		log.Printf("subject: %s\n", subject)
+		log.Printf("body: %s\n", body)
+		log.Printf("to: %s\n\n", to)
 	}
 }
