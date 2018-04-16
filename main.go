@@ -38,27 +38,43 @@ func main() {
 	}
 }
 
+// parseEmail is the main event loop, executing for each received email.
 func parseEmail(w http.ResponseWriter, req *http.Request) {
 	// acknowledge POST from Mailgun
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(250)                  // SMTP OK
 	log.Printf("Got: %s\n", req.Header) // TODO
 
-	// decode body
+	body, err := getBody(req)
+	if err != nil {
+		return
+	}
+
+	if !senderIsAdmin(body) {
+		// ignore: spam, or a recipient hit "reply to all"
+		emailResults("Illegal Sender", body) // TODO
+		return
+	}
+	parseRecipients(body)
+}
+
+// getBody extracts and unescapes the email body from the Mailgun POST.
+func getBody(req *http.Request) (string, error) {
+	// read body
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll - %s\n", err)
 		emailResults("Parse Error", err.Error())
-		return
+		return "", err
 	}
+	// decode body
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
 	if err != nil {
 		log.Printf("url.QueryUnescape - %s\n", err)
 		emailResults("Parse Error", err.Error())
-		return
+		return "", err
 	}
-
 	// TODO trim bulk of unused payload which interferes with regex processing
 	var body string
 	i := strings.Index(rawBody, "Content-Type")
@@ -68,13 +84,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 	} else {
 		body = rawBody[0:i]
 	}
-
-	if !senderIsAdmin(body) {
-		// ignore: spam, or a recipient hit "reply to all"
-		emailResults("Illegal Sender", rawBody) // TODO
-		return
-	}
-	parseRecipients(body)
+	return body, nil
 }
 
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
@@ -96,6 +106,7 @@ func senderIsAdmin(body string) bool {
 	return false
 }
 
+// isUserBot is used to detect and ignore the userbot while processing recipient addresses.
 func isUserBot(fields []string) bool {
 	for _, f := range fields {
 		if f == mgUserBot {
@@ -147,6 +158,7 @@ func createUser(first, last, email string) string {
 	return "success"
 }
 
+// emailResults notifies admins of successes and failures while trying to create users.
 func emailResults(subject string, body string) {
 	log.Println(subject)
 	if mg == nil {
