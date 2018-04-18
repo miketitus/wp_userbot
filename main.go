@@ -72,25 +72,6 @@ func getRequestBody(req *http.Request) (string, error) {
 	return rawBody, nil
 }
 
-func getResponseBody(response *http.Response) (string, error) {
-	// read body
-	bodyBytes, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Printf("ioutil.ReadAll - %s\n", err)
-		//emailResults("Parse Error", err.Error())
-		return "", err
-	}
-	// decode body
-	body := string(bodyBytes)
-	body, err = url.QueryUnescape(body)
-	if err != nil {
-		log.Printf("url.QueryUnescape - %s\n", err)
-		//emailResults("Parse Error", err.Error())
-		return "", err
-	}
-	return body, nil
-}
-
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
 func senderIsAdmin(body string) bool {
 	var sender string
