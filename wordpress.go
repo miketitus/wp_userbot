@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var wpBaseURL, wpPassword, wpUser string
@@ -23,7 +24,7 @@ func callWP(api, opts string) (*http.Response, error) {
 	if opts != "" {
 		url = url + "?" + opts
 	}
-	log.Printf("URL: %s\n", url)
+	// TODO log.Printf("URL: %s\n", url)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatal("http.NewRequest", err)
@@ -33,4 +34,14 @@ func callWP(api, opts string) (*http.Response, error) {
 	request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	return client.Do(request)
+}
+
+func userExists(email string) (bool, error) {
+	response, err := callWP("users", "search="+email)
+	if err != nil {
+		return false, err
+	}
+	body, _ := getResponseBody(response)
+	// TODO log.Println(body)
+	return strings.Contains(body, "id"), nil
 }
