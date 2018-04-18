@@ -24,8 +24,6 @@ func main() {
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
 	mgUserBot = os.Getenv("MG_USERBOT")
-	// setup WordPress
-	initWordPress()
 	// listen for email POSTs from Mailgun
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
@@ -35,13 +33,13 @@ func main() {
 }
 
 // parseEmail is the main event loop, executing for each received email.
-func parseEmail(w http.ResponseWriter, req *http.Request) {
+func parseEmail(w http.ResponseWriter, request *http.Request) {
 	// acknowledge POST from Mailgun
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(250)                  // SMTP OK
-	log.Printf("Got: %s\n", req.Header) // TODO
+	w.WriteHeader(250)                      // SMTP OK
+	log.Printf("Got: %s\n", request.Header) // TODO
 
-	body, err := getBody(req)
+	body, err := getRequestBody(request)
 	if err != nil {
 		return
 	}
@@ -55,7 +53,7 @@ func parseEmail(w http.ResponseWriter, req *http.Request) {
 }
 
 // getBody extracts and unescapes the email body from the Mailgun POST.
-func getBody(req *http.Request) (string, error) {
+func getRequestBody(req *http.Request) (string, error) {
 	// read body
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -71,14 +69,24 @@ func getBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
-	// TODO trim bulk of unused payload which interferes with regex processing
-	var body string
-	i := strings.Index(rawBody, "Content-Type")
-	if i < 0 {
-		body = rawBody
-		emailResults("Parse Error", body)
-	} else {
-		body = rawBody[0:i]
+	return rawBody, nil
+}
+
+func getResponseBody(response *http.Response) (string, error) {
+	// read body
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("ioutil.ReadAll - %s\n", err)
+		//emailResults("Parse Error", err.Error())
+		return "", err
+	}
+	// decode body
+	body := string(bodyBytes)
+	body, err = url.QueryUnescape(body)
+	if err != nil {
+		log.Printf("url.QueryUnescape - %s\n", err)
+		//emailResults("Parse Error", err.Error())
+		return "", err
 	}
 	return body, nil
 }
@@ -94,6 +102,7 @@ func senderIsAdmin(body string) bool {
 	} else {
 		sender = raw[5:]
 	}
+	fmt.Printf("sender: %s\n", sender)
 	for _, s := range mgAdmins {
 		if s == sender {
 			return true
@@ -118,7 +127,8 @@ func parseRecipients(body string) {
 	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
 	recipients := strings.Split(raw[3:], ", ")
-	log.Printf("recipients = %s\n", recipients)
+	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
+	log.Printf("recipients = %s\n", recipients) // TODO
 	for _, r := range recipients {
 		fields := strings.Fields(r)
 		if isUserBot(fields) {
