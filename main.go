@@ -122,13 +122,12 @@ func isUserBot(fields []string) bool {
 }
 
 func parseRecipients(body string) {
+	var hadError bool
 	var resultBody []string
-	resultSubject := "Success"
 	recipientRE := regexp.MustCompile("To=([^&]*)")
 	raw := recipientRE.FindString(body)
 	recipients := strings.Split(raw[3:], ", ")
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
-	log.Printf("recipients = %s\n", recipients) // TODO
 	for _, r := range recipients {
 		fields := strings.Fields(r)
 		if isUserBot(fields) {
@@ -137,17 +136,31 @@ func parseRecipients(body string) {
 			// valid structure
 			if senderIsAdmin(fields[2]) {
 				continue // admin email, skip
-			} else if isValidEmail(fields[2]) {
+			} else if !isValidEmail(fields[2]) {
+				hadError = true
 				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
 			} else {
-				userResult := createUser(fields[0], fields[1], fields[2])
-				resultBody = append(resultBody, fmt.Sprintf("%s: %s", userResult, r))
+				var result string
+				created := createUser(fields[0], fields[1], fields[2])
+				if created {
+					result = "Success"
+				} else {
+					hadError = true
+					result = "Error"
+				}
+				resultBody = append(resultBody, fmt.Sprintf("%s: %s", result, r))
 			}
 		} else {
 			// error
+			hadError = true
 			resultBody = append(resultBody, fmt.Sprintf("Invalid format: %s", r))
-			resultSubject = "Error(s) found"
 		}
+	}
+	var resultSubject string
+	if hadError {
+		resultSubject = "Error(s) found"
+	} else {
+		resultSubject = "Success"
 	}
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
@@ -158,10 +171,6 @@ func isValidEmail(email string) bool {
 	// mimimal validation regex, could be a lot more complex
 	emailRE := regexp.MustCompile("[^@]+@[^@]+\\..+")
 	return emailRE.FindStringIndex(email) != nil
-}
-
-func createUser(first, last, email string) string {
-	return "success"
 }
 
 // emailResults notifies admins of successes and failures while trying to create users.
