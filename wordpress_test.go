@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestWPGet(t *testing.T) {
+func TestWpAPI(t *testing.T) {
 	// test with tags route because it returns minimal data
-	_, err := wpGet("tags", "")
+	_, err := wpAPI("GET", "tags", "")
 	if err != nil {
 		t.Error(err)
 	}

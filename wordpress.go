@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-// User contains parsed user JSON returned by WordPress
+// User contains parsed user JSON returned by WordPress.
 type User struct {
 	ID          int32  `json:"id"`
 	DisplayName string `json:"name"`
@@ -18,23 +18,23 @@ type User struct {
 
 var wpBaseURL, wpPassword, wpUser string
 
-// initWordPress reads env vars for WordPress API
+// initWordPress reads env vars for WordPress API.
 func initWordPress() {
 	wpBaseURL = fmt.Sprintf("https://%s/", os.Getenv("WP_BASE_URL"))
 	wpPassword = os.Getenv("WP_PASSWORD")
 	wpUser = os.Getenv("WP_USER")
 }
 
-// wpGet sends a generic HTTP GET to the WordPress API
-func wpGet(api, opts string) (*http.Response, error) {
+// wpAPI sends a generic HTTP to the WordPress API.
+func wpAPI(method, route, opts string) (*http.Response, error) {
 	if wpBaseURL == "" {
 		initWordPress()
 	}
-	url := wpBaseURL + "wp-json/wp/v2/" + api
+	url := wpBaseURL + "wp-json/wp/v2/" + route
 	if opts != "" {
 		url = url + "?" + opts
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		log.Fatal("http.NewRequest", err)
 	}
@@ -45,9 +45,9 @@ func wpGet(api, opts string) (*http.Response, error) {
 	return client.Do(request)
 }
 
-// userExists determines whether a user account already exists (based on email address)
+// userExists determines whether a user account already exists (based on email address).
 func userExists(email string) (bool, error) {
-	response, err := wpGet("users", "search="+email)
+	response, err := wpAPI("GET", "users", "search="+email)
 	if err != nil {
 		return false, err
 	}
