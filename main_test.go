@@ -1,16 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
 func TestSenderIsAdmin(t *testing.T) {
+	if mgAdmins == nil {
+		initMain()
+	}
 	for _, s := range mgAdmins {
-		if !senderIsAdmin(s) {
+		test := fmt.Sprintf("&from=%s&", s)
+		if !senderIsAdmin(test) {
 			t.Errorf("'%s' was declared invalid", s)
 		}
 	}
-	s := "Invalid"
+	s := "&from=nobody@nowhere.xyz&"
 	if senderIsAdmin(s) {
 		t.Errorf("'%s' was declared valid", s)
 	}
