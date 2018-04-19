@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -13,13 +14,19 @@ func TestCallWP(t *testing.T) {
 }
 
 func TestUserExists(t *testing.T) {
-	exists, err := userExists("mike@mike-titus.com")
-	if err != nil {
-		t.Error(err)
-	} else if !exists {
-		t.Error("user should have been found")
+	if mgAdmins == nil {
+		initMain()
 	}
-	exists, err = userExists("nobody@nowhere.xyz")
+	for _, user := range mgAdmins {
+		fields := strings.Fields(user)
+		exists, err := userExists(fields[2])
+		if err != nil {
+			t.Error(err)
+		} else if !exists {
+			t.Error("user should have been found")
+		}
+	}
+	exists, err := userExists("nobody@nowhere.xyz")
 	if err != nil {
 		t.Error(err)
 	} else if exists {
