@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"gopkg.in/mailgun/mailgun-go.v1"
 )
@@ -38,10 +39,11 @@ func initMain() {
 
 // parseEmail is the main event loop, executing for each received email.
 func parseEmail(w http.ResponseWriter, request *http.Request) {
+	log.Println()
+	log.Printf("Got: %s\n", request.Header)
 	// acknowledge POST from Mailgun
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(250)                      // SMTP OK
-	log.Printf("Got: %s\n", request.Header) // TODO
+	w.WriteHeader(250) // SMTP OK
 
 	body, err := getRequestBody(request)
 	if err != nil {
@@ -50,7 +52,7 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 
 	if !senderIsAdmin(body) {
 		// ignore: spam, or a recipient hit "reply to all"
-		emailResults("Illegal Sender", body) // TODO
+		emailResults("Illegal Sender", body)
 		return
 	}
 	parseRecipients(body)
@@ -65,6 +67,15 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
+
+	// TODO write body
+	t := time.Now()
+	fname := fmt.Sprintf("/tmp/%d.txt", t.Unix())
+	err = ioutil.WriteFile(fname, bodyBytes, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	// decode body
 	rawBody := string(bodyBytes)
 	rawBody, err = url.QueryUnescape(rawBody)
