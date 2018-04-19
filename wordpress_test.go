@@ -36,7 +36,7 @@ func TestUserExists(t *testing.T) {
 
 func TestCreateUser(t *testing.T) {
 	success, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com")
-	if err != nil {
+	if !success || err != nil {
 		t.Error(err)
 	}
 }
