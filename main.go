@@ -18,18 +18,22 @@ var mgAPIKey, mgDomain, mgPublicAPIKey, mgUserBot string
 var mg mailgun.Mailgun
 
 func main() {
-	// read env settings
-	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
-	mgAPIKey = os.Getenv("MG_API_KEY")
-	mgDomain = os.Getenv("MG_DOMAIN")
-	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
-	mgUserBot = os.Getenv("MG_USERBOT")
+	initMain()
 	// listen for email POSTs from Mailgun
 	http.HandleFunc("/userbot", parseEmail)
 	err := http.ListenAndServe(":8443", nil)
 	if err != nil {
 		log.Fatal("http.ListenAndServe", err)
 	}
+}
+
+// initMain reads env vars for Mailgun API
+func initMain() {
+	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
+	mgAPIKey = os.Getenv("MG_API_KEY")
+	mgDomain = os.Getenv("MG_DOMAIN")
+	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
+	mgUserBot = os.Getenv("MG_USERBOT")
 }
 
 // parseEmail is the main event loop, executing for each received email.
@@ -75,15 +79,14 @@ func getRequestBody(req *http.Request) (string, error) {
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
 func senderIsAdmin(body string) bool {
 	var sender string
-	senderRE := regexp.MustCompile("from=([^&]*)")
+	senderRE := regexp.MustCompile("&from=([^&]*)")
 	raw := senderRE.FindString(body)
 	if raw == "" {
 		// this should never happen, but let's keep on truckin'
 		sender = raw
 	} else {
-		sender = raw[5:]
+		sender = raw[6:]
 	}
-	fmt.Printf("sender: %s\n", sender)
 	for _, s := range mgAdmins {
 		if s == sender {
 			return true
@@ -122,8 +125,10 @@ func parseRecipients(body string) {
 				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
 			} else {
 				var result string
-				created := createUser(fields[0], fields[1], fields[2])
-				if created {
+				created, err := createUser(fields[0], fields[1], fields[2])
+				if err != nil {
+					// TODO
+				} else if created {
 					result = "Success"
 				} else {
 					hadError = true
