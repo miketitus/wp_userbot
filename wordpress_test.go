@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestCallWP(t *testing.T) {
+func TestWPGet(t *testing.T) {
 	// test with tags route because it returns minimal data
-	_, err := callWP("tags", "")
+	_, err := wpGet("tags", "")
 	if err != nil {
 		t.Error(err)
 	}

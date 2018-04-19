@@ -25,8 +25,8 @@ func initWordPress() {
 	wpUser = os.Getenv("WP_USER")
 }
 
-// callWP sends a generic HTTP GET to the WordPress API
-func callWP(api, opts string) (*http.Response, error) {
+// wpGet sends a generic HTTP GET to the WordPress API
+func wpGet(api, opts string) (*http.Response, error) {
 	if wpBaseURL == "" {
 		initWordPress()
 	}
@@ -47,7 +47,7 @@ func callWP(api, opts string) (*http.Response, error) {
 
 // userExists determines whether a user account already exists (based on email address)
 func userExists(email string) (bool, error) {
-	response, err := callWP("users", "search="+email)
+	response, err := wpGet("users", "search="+email)
 	if err != nil {
 		return false, err
 	}
