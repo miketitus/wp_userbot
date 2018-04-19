@@ -18,7 +18,7 @@ type User struct {
 
 var wpBaseURL, wpPassword, wpUser string
 
-// initWordPress reads env vars (via lazy loading)
+// initWordPress reads env vars for WordPress API
 func initWordPress() {
 	wpBaseURL = fmt.Sprintf("https://%s/", os.Getenv("WP_BASE_URL"))
 	wpPassword = os.Getenv("WP_PASSWORD")
