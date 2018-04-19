@@ -33,3 +33,10 @@ func TestUserExists(t *testing.T) {
 		t.Error("user should not have been found")
 	}
 }
+
+func TestCreateUser(t *testing.T) {
+	success, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com")
+	if err != nil {
+		t.Error(err)
+	}
+}
