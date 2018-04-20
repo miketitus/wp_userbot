@@ -1,7 +1,7 @@
 package main
 
 import (
-	"strings"
+	"fmt"
 	"testing"
 )
 
@@ -36,7 +36,28 @@ func TestUserExists(t *testing.T) {
 
 func TestCreateUser(t *testing.T) {
 	success, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com")
-	if !success || err != nil {
+	if err != nil {
 		t.Error(err)
+	} else if !success {
+		t.Error("user creation not successful")
+	}
+}
+
+func TestGeneratePassword(t *testing.T) {
+	testLengths := []int{1, 8, 16}
+	for _, l := range testLengths {
+		p := generatePassword(l)
+		if len(p) != l {
+			msg := fmt.Sprintf("'%s' is not length %d\n", p, l)
+			t.Error(msg)
+		}
+	}
+	badLengths := []int{-1, 0}
+	for _, l := range badLengths {
+		p := generatePassword(l)
+		if p != "" {
+			msg := fmt.Sprintf("length %d should not have returned '%s'\n", l, p)
+			t.Error(msg)
+		}
 	}
 }
