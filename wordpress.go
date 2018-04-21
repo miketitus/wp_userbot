@@ -17,11 +17,12 @@ import (
 
 // User contains parsed user JSON returned by WordPress.
 type User struct {
-	ID        int32  `json:"id"`
-	Username  string `json:"username"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+	ID        int32    `json:"id,omitempty"`
+	Username  string   `json:"username,omitempty"`
+	FirstName string   `json:"first_name,omitempty"`
+	LastName  string   `json:"last_name,omitempty"`
+	Email     string   `json:"email,omitempty"`
+	Roles     []string `json:"roles,omitempty"`
 }
 
 var wpBaseURL, wpPassword, wpUser string
@@ -59,7 +60,7 @@ func wpAPI(method, route, data string) (*http.Response, error) {
 
 // userExists determines whether a user account already exists (based on email address).
 func userExists(email string) (bool, error) {
-	response, err := wpAPI("GET", "users", "search="+email)
+	response, err := wpAPI("GET", "users", "context=edit&search="+email)
 	if err != nil {
 		log.Printf("client.Do: %s\n", response.Header)
 		return false, err
@@ -75,10 +76,12 @@ func usersFromResponse(response *http.Response) []User {
 		log.Printf("ioutil.ReadAll: %s\n", err)
 		return users
 	}
+	// fmt.Printf("body: %s\n", body)
 	err = json.Unmarshal(body, &users)
 	if err != nil {
 		log.Printf("json.Unmarshall: %s\n", err)
 	}
+	// fmt.Printf("users: %v\n", users)
 	return users
 }
 
@@ -115,6 +118,7 @@ func createUser(first, last, email string) (bool, error) {
 		return false, err
 	}
 	created, err := regexp.Match("email", body)
+	// TODO "subscriber"
 	return created, err
 }
 
