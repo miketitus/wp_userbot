@@ -14,14 +14,15 @@ import (
 )
 
 var mgAdmins []string
-var mgAPIKey, mgDomain, mgPublicAPIKey, mgUserBot string
+var mgAPIKey, mgDomain, mgListenPort, mgPublicAPIKey, mgUserBot string
 var mg mailgun.Mailgun
 
+// TODO HTTPS
 func main() {
 	initMain()
 	// listen for email POSTs from Mailgun
 	http.HandleFunc("/userbot", parseEmail)
-	err := http.ListenAndServe(":8443", nil) // TODO
+	err := http.ListenAndServe(`:`+mgListenPort, nil)
 	if err != nil {
 		log.Fatal("http.ListenAndServe", err)
 	}
@@ -32,6 +33,7 @@ func initMain() {
 	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
 	mgAPIKey = os.Getenv("MG_API_KEY")
 	mgDomain = os.Getenv("MG_DOMAIN")
+	mgListenPort = os.Getenv("MG_LISTEN_PORT")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
 	mgUserBot = os.Getenv("MG_USERBOT")
 }
