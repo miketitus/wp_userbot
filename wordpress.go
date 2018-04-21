@@ -49,7 +49,8 @@ func wpAPI(method, route, data string) (*http.Response, error) {
 	// log.Printf("route: %s\n", route)
 	request, err := http.NewRequest(method, route, body)
 	if err != nil {
-		log.Fatal("http.NewRequest", err) // TODO
+		log.Printf("http.NewRequest: %s\n", err)
+		return nil, err
 	}
 	request.SetBasicAuth(wpUser, wpPassword)
 	request.Header.Set("Accept", "application/json")
