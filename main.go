@@ -21,7 +21,7 @@ func main() {
 	initMain()
 	// listen for email POSTs from Mailgun
 	http.HandleFunc("/userbot", parseEmail)
-	err := http.ListenAndServe(":8443", nil)
+	err := http.ListenAndServe(":8443", nil) // TODO
 	if err != nil {
 		log.Fatal("http.ListenAndServe", err)
 	}
@@ -107,7 +107,7 @@ func isUserBot(fields []string) bool {
 	return false
 }
 
-// TODO
+// parseRecipients TODO
 func parseRecipients(body string) {
 	var hadError bool
 	var resultBody []string
@@ -125,24 +125,25 @@ func parseRecipients(body string) {
 				continue // admin email, skip
 			} else if !isValidEmail(fields[2]) {
 				hadError = true
-				resultBody = append(resultBody, fmt.Sprintf("Invalid email: %s", r))
+				resultBody = append(resultBody, fmt.Sprintf("%s: Invalid email", r))
 			} else {
 				var result string
 				created, err := createUser(fields[0], fields[1], fields[2])
 				if err != nil {
-					// TODO
+					hadError = true
+					result = err.Error()
 				} else if created {
 					result = "Success"
 				} else {
 					hadError = true
-					result = "Error"
+					result = "Unknown Error"
 				}
-				resultBody = append(resultBody, fmt.Sprintf("%s: %s", result, r))
+				resultBody = append(resultBody, fmt.Sprintf("%s: %s", r, result))
 			}
 		} else {
 			// error
 			hadError = true
-			resultBody = append(resultBody, fmt.Sprintf("Invalid format: %s", r))
+			resultBody = append(resultBody, fmt.Sprintf("%s: Invalid format", r))
 		}
 	}
 	var resultSubject string
