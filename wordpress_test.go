@@ -18,7 +18,7 @@ func TestUserExists(t *testing.T) {
 		initMain()
 	}
 	for _, user := range mgAdmins {
-		fields := strings.Fields(user)
+		fields := getFields(user)
 		exists, err := userExists(fields[2])
 		if err != nil {
 			t.Error(err)
