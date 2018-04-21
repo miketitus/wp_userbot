@@ -70,7 +70,7 @@ func userExists(email string) (bool, error) {
 	return len(users) > 0, nil
 }
 
-// usersFromResponse TODO
+// usersFromResponse creates a slice of Users from body text returned by the WordPress API.
 func usersFromResponse(response *http.Response) []User {
 	var users []User
 	body, err := ioutil.ReadAll(response.Body)
@@ -83,7 +83,7 @@ func usersFromResponse(response *http.Response) []User {
 	if err != nil {
 		log.Printf("json.Unmarshall: %s\n", err)
 	}
-	fmt.Printf("users: %v\n", users)
+	// fmt.Printf("users: %v\n", users)
 	return users
 }
 

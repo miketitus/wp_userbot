@@ -107,7 +107,8 @@ func isUserBot(fields []string) bool {
 	return false
 }
 
-// parseRecipients TODO
+// parseRecipients decodes email recipients, and loops through them creating new
+// WordPress users for each recipient, except for userbot and admin recipients.
 func parseRecipients(body string) {
 	var hadError bool
 	var resultBody []string
@@ -141,7 +142,7 @@ func parseRecipients(body string) {
 				resultBody = append(resultBody, fmt.Sprintf("%s: %s", r, result))
 			}
 		} else {
-			// error
+			// error, invalid structure
 			hadError = true
 			resultBody = append(resultBody, fmt.Sprintf("%s: Invalid format", r))
 		}
