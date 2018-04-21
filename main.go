@@ -156,6 +156,8 @@ func parseRecipients(body string) {
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
 }
 
+// getFields splits an email address into component strings, and cleans up the email address.
+// e.g. "John Doe <john@john.doe>" --> [john doe john@john.doe]
 func getFields(s string) []string {
 	fields := strings.Fields(s)
 	// cleanup email address
