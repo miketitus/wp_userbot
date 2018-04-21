@@ -44,20 +44,17 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGeneratePassword(t *testing.T) {
-	testLengths := []int{1, 8, 16}
+	testLengths := []uint8{1, 8, 16}
 	for _, l := range testLengths {
 		p := generatePassword(l)
-		if len(p) != l {
+		if len(p) != int(l) {
 			msg := fmt.Sprintf("'%s' is not length %d\n", p, l)
 			t.Error(msg)
 		}
 	}
-	badLengths := []int{-1, 0}
-	for _, l := range badLengths {
-		p := generatePassword(l)
-		if p != "" {
-			msg := fmt.Sprintf("length %d should not have returned '%s'\n", l, p)
-			t.Error(msg)
-		}
+	p := generatePassword(0)
+	if p != "" {
+		msg := fmt.Sprintf("length 0 should not have returned '%s'\n", p)
+		t.Error(msg)
 	}
 }

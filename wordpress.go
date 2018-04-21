@@ -70,6 +70,7 @@ func userExists(email string) (bool, error) {
 	return len(users) > 0, nil
 }
 
+// usersFromResponse TODO
 func usersFromResponse(response *http.Response) []User {
 	var users []User
 	body, err := ioutil.ReadAll(response.Body)
@@ -82,7 +83,7 @@ func usersFromResponse(response *http.Response) []User {
 	if err != nil {
 		log.Printf("json.Unmarshall: %s\n", err)
 	}
-	// fmt.Printf("users: %v\n", users)
+	fmt.Printf("users: %v\n", users)
 	return users
 }
 
@@ -119,20 +120,21 @@ func createUser(first, last, email string) (bool, error) {
 		return false, err
 	}
 	created, err := regexp.Match("email", body)
-	// TODO "subscriber"
+	// TODO "subscriber, bbp_participant"
 	return created, err
 }
 
-func generatePassword(length int) string {
-	if length <= 0 {
-		return ""
-	}
+// generatePassword generates random passwords for new users.
+// It omits special characters and characters that are easily confused with
+// each other, depending on typeface: 'O' '0' 'l' '1'
+func generatePassword(length uint8) string {
 	if wpBaseURL == "" {
 		initWordPress()
 	}
 	var charset = []byte("ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789")
 	var password = make([]byte, length)
-	for i := 0; i < length; i++ {
+	var i uint8
+	for i = 0; i < length; i++ {
 		r := rand.Intn(len(charset))
 		password[i] = charset[r]
 	}
