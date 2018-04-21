@@ -116,7 +116,7 @@ func parseRecipients(body string) {
 	recipients := strings.Split(raw[3:], ", ")
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
 	for _, r := range recipients {
-		fields := strings.Fields(r)
+		fields := getFields(r)
 		if isUserBot(fields) {
 			continue // ignore
 		} else if len(fields) == 3 {
@@ -152,6 +152,16 @@ func parseRecipients(body string) {
 		resultSubject = "Success"
 	}
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
+}
+
+func getFields(s string) []string {
+	fields := strings.Fields(s)
+	// cleanup email address
+	if fields[2][0:1] == `<` {
+		end := len(fields[2]) - 1
+		fields[2] = fields[2][1:end]
+	}
+	return fields
 }
 
 // isValidEmail verifies that a recipient email address is in valid format.
