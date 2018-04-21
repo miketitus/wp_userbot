@@ -41,6 +41,7 @@ func TestCreateUser(t *testing.T) {
 	} else if !success {
 		t.Error("user creation not successful")
 	}
+	// TODO delete test user
 }
 
 func TestGeneratePassword(t *testing.T) {
