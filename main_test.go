@@ -21,6 +21,20 @@ func TestSenderIsAdmin(t *testing.T) {
 	}
 }
 
+func TestGetFields(t *testing.T) {
+	s := "John Doe <john@john.doe>"
+	f := getFields(s)
+	if f[0] != "John" {
+		t.Errorf("f[0] should not be %s", f[0])
+	}
+	if f[1] != "Doe" {
+		t.Errorf("f[1] should not be %s", f[1])
+	}
+	if f[2] != "john@john.doe" {
+		t.Errorf("f[2] should not be %s", f[2])
+	}
+}
+
 func TestIsUserBot(t *testing.T) {
 	s := make([]string, 1, 1)
 	s[0] = mgUserBot
