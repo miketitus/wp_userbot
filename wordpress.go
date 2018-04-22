@@ -46,7 +46,7 @@ func wpAPI(method, route, data string) (*http.Response, error) {
 		// query strings used for both GET and POST
 		route = route + "?" + data
 	}
-	// log.Printf("route: %s\n", route)
+	log.Printf("route: %s\n", route)
 	request, err := http.NewRequest(method, route, body)
 	if err != nil {
 		log.Printf("http.NewRequest: %s\n", err)
@@ -107,7 +107,7 @@ func createUser(first, last, email string) (int, error) {
 	// send user to WP
 	response, err := wpAPI("POST", "users", opts)
 	if err != nil {
-		log.Printf("client.Do: %s\n", err)
+		log.Printf("wpAPI: %s\n", err)
 		return -1, err
 	}
 	/* WP returns valid JSON upon user creation, but json.Unmarshall fails to parse
@@ -148,4 +148,23 @@ func generatePassword(length uint8) string {
 		password[i] = charset[r]
 	}
 	return string(password)
+}
+
+func deleteUser(id int) {
+	if id <= 1 {
+		// don't delete the admin!
+		return
+	}
+	route := fmt.Sprintf("users/%d", id)
+	response, err := wpAPI("DELETE", route, "force=true&reassign=1")
+	if err != nil {
+		log.Printf("wpAPI: %s\n", err)
+		return
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("ioutil.ReadAll: %s\n", err)
+		return
+	}
+	return
 }

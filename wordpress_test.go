@@ -41,8 +41,8 @@ func TestCreateUser(t *testing.T) {
 	} else if id < 0 {
 		t.Error("user creation not successful")
 	}
-	fmt.Printf("new id: %d", id)
-	// TODO delete test user
+	fmt.Printf("new id: %d\n", id)
+	deleteUser(id)
 }
 
 func TestGeneratePassword(t *testing.T) {
