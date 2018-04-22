@@ -17,12 +17,11 @@ import (
 
 // User contains parsed user JSON returned by WordPress.
 type User struct {
-	ID        int32    `json:"id,omitempty"`
-	Username  string   `json:"username,omitempty"`
-	FirstName string   `json:"first_name,omitempty"`
-	LastName  string   `json:"last_name,omitempty"`
-	Email     string   `json:"email,omitempty"`
-	Roles     []string `json:"roles,omitempty"`
+	ID        int32  `json:"id,omitempty"`
+	Username  string `json:"username,omitempty"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	Email     string `json:"email,omitempty"`
 }
 
 var wpBaseURL, wpPassword, wpUser string
@@ -120,7 +119,6 @@ func createUser(first, last, email string) (bool, error) {
 		return false, err
 	}
 	created, err := regexp.Match("email", body)
-	// TODO "subscriber, bbp_participant"
 	return created, err
 }
 
