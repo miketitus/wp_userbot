@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -87,15 +88,16 @@ func usersFromResponse(response *http.Response) []User {
 }
 
 // createUser creates a new user account (primary key is email).
-// It parses the response to make sure creation was successful.
-func createUser(first, last, email string) (bool, error) {
+// It parses the response to make sure creation was successful and
+// returns the user id if successful, or -1 if unsuccessful.
+func createUser(first, last, email string) (int, error) {
 	// ensure user doesn't already exist
 	exists, err := userExists(email)
 	if err != nil {
-		return false, err
+		return -1, err
 	} else if exists {
 		msg := fmt.Sprintf("a user already exists with email: %s", email)
-		return false, errors.New(msg)
+		return -1, errors.New(msg)
 	}
 	// build options string
 	opts := fmt.Sprintf("username=%s&first_name=%s&last_name=%s&email=%s&password=%s",
@@ -106,7 +108,7 @@ func createUser(first, last, email string) (bool, error) {
 	response, err := wpAPI("POST", "users", opts)
 	if err != nil {
 		log.Printf("client.Do: %s\n", err)
-		return false, err
+		return -1, err
 	}
 	/* WP returns valid JSON upon user creation, but json.Unmarshall fails to parse
 	it for unspecified reasons. So, instead of checking an actual user result like:
@@ -116,10 +118,19 @@ func createUser(first, last, email string) (bool, error) {
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll: %s\n", err)
-		return false, err
+		return -1, err
 	}
-	created, err := regexp.Match("email", body)
-	return created, err
+	// fmt.Printf("body: %s\n", body)
+	// get id of new user
+	idRE := regexp.MustCompile("\"id\":([0-9]*),")
+	ids := idRE.FindSubmatch(body)
+	if len(ids) < 2 {
+		// should never happen
+		return -1, nil
+	}
+	id := string(ids[1])
+	id32, err := strconv.ParseUint(id, 10, 32)
+	return int(id32), err
 }
 
 // generatePassword generates random passwords for new users.

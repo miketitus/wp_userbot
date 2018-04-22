@@ -35,12 +35,13 @@ func TestUserExists(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	success, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com") // TODO
+	id, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com") // TODO
 	if err != nil {
 		t.Error(err)
-	} else if !success {
+	} else if id < 0 {
 		t.Error("user creation not successful")
 	}
+	fmt.Printf("new id: %d", id)
 	// TODO delete test user
 }
 

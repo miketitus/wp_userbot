@@ -131,11 +131,11 @@ func parseRecipients(body string) {
 				resultBody = append(resultBody, fmt.Sprintf("%s: Invalid email", r))
 			} else {
 				var result string
-				created, err := createUser(fields[0], fields[1], fields[2])
+				id, err := createUser(fields[0], fields[1], fields[2])
 				if err != nil {
 					hadError = true
 					result = err.Error()
-				} else if created {
+				} else if id < 0 {
 					result = "Success"
 				} else {
 					hadError = true
