@@ -100,10 +100,10 @@ func createUser(first, last, email string) (int, error) {
 		return -1, errors.New(msg)
 	}
 	// build options string
+	username := strings.ToLower(first[:1] + last)
+	password := generatePassword(12)
 	opts := fmt.Sprintf("username=%s&first_name=%s&last_name=%s&email=%s&password=%s",
-		strings.ToLower(first[:1]+last),
-		first, last, email,
-		generatePassword(12))
+		username, first, last, email, password)
 	// send user to WP
 	response, err := wpAPI("POST", "users", opts)
 	if err != nil {
@@ -161,7 +161,7 @@ func deleteUser(id int) {
 		log.Printf("wpAPI: %s\n", err)
 		return
 	}
-	body, err := ioutil.ReadAll(response.Body)
+	_, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("ioutil.ReadAll: %s\n", err)
 		return
