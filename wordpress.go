@@ -120,7 +120,6 @@ func createUser(first, last, email string) (int, error) {
 		log.Printf("ioutil.ReadAll: %s\n", err)
 		return -1, err
 	}
-	// fmt.Printf("body: %s\n", body)
 	// get id of new user
 	idRE := regexp.MustCompile("\"id\":([0-9]*),")
 	ids := idRE.FindSubmatch(body)
