@@ -22,15 +22,26 @@ func TestSenderIsAdmin(t *testing.T) {
 }
 
 func TestGetFields(t *testing.T) {
-	s := "John Doe <john@john.doe>"
-	f := getFields(s)
-	if f[0] != "John" {
+	var f []string
+	// one field
+	f = getFields("<john@john.doe>")
+	if f[0] != "john@john.doe" {
 		t.Errorf("f[0] should not be %s", f[0])
 	}
-	if f[1] != "Doe" {
-		t.Errorf("f[1] should not be %s", f[1])
+	// two fields
+	f = getFields("John <john@john.doe>")
+	if f[0] != "John" {
+		t.Errorf("f[0] should not be %s", f[0])
+	} else if f[1] != "john@john.doe" {
+		t.Errorf("f[1] should not be %s", f[2])
 	}
-	if f[2] != "john@john.doe" {
+	// three fields
+	f = getFields("John Doe <john@john.doe>")
+	if f[0] != "John" {
+		t.Errorf("f[0] should not be %s", f[0])
+	} else if f[1] != "Doe" {
+		t.Errorf("f[1] should not be %s", f[1])
+	} else if f[2] != "john@john.doe" {
 		t.Errorf("f[2] should not be %s", f[2])
 	}
 }
@@ -60,4 +71,8 @@ func TestIsValidEmail(t *testing.T) {
 			t.Errorf("'%s' was declared valid", e)
 		}
 	}
+}
+
+func TestEmailUser(t *testing.T) {
+	emailUser("jdoe", "John", "Doe", "acct@mike-titus.com", "secret")
 }
