@@ -124,11 +124,17 @@ func createUser(first, last, email string) (int, error) {
 	idRE := regexp.MustCompile("\"id\":([0-9]*),")
 	ids := idRE.FindSubmatch(body)
 	if len(ids) < 2 {
-		// should never happen
+		// this should never happen
 		return -1, nil
 	}
 	id := string(ids[1])
 	id32, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		// this should never happen
+		log.Printf("strconv.ParseUint: %s\n", err)
+		return -1, err
+	}
+	emailUser(username, first, last, email, password)
 	return int(id32), err
 }
 
