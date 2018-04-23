@@ -164,10 +164,12 @@ func parseRecipients(body string) {
 // e.g. "John Doe <john@john.doe>" --> [john doe john@john.doe]
 func getFields(s string) []string {
 	fields := strings.Fields(s)
+	// first and/or last name is optional, but last field should always be the email field
 	// cleanup email address
-	if fields[2][0:1] == `<` {
-		end := len(fields[2]) - 1
-		fields[2] = fields[2][1:end]
+	i := len(fields) - 1
+	if fields[i][0:1] == `<` {
+		end := len(fields[i]) - 1
+		fields[i] = fields[i][1:end]
 	}
 	return fields
 }
