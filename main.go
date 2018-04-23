@@ -14,7 +14,7 @@ import (
 )
 
 var mgAdmins []string
-var mgAPIKey, mgDomain, mgListenPort, mgPublicAPIKey, mgUserBot string
+var mgAPIKey, mgDomain, mgListenPort, mgPublicAPIKey, mgUserBcc, mgUserBot string
 var mg mailgun.Mailgun
 
 // TODO HTTPS
@@ -35,7 +35,9 @@ func initMain() {
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgListenPort = os.Getenv("MG_LISTEN_PORT")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
+	mgUserBcc = os.Getenv("MG_USER_BCC")
 	mgUserBot = os.Getenv("MG_USERBOT")
+	mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
 }
 
 // parseEmail is the main event loop, executing for each received email.
@@ -180,9 +182,8 @@ func isValidEmail(email string) bool {
 
 // emailResults notifies admins of successes and failures while trying to create users.
 func emailResults(subject string, body string) {
-	log.Println(subject)
 	if mg == nil {
-		mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
+		initMain()
 	}
 	from := "no-reply@" + mgDomain
 	subject = "userbot: " + subject
@@ -192,8 +193,61 @@ func emailResults(subject string, body string) {
 	if err != nil {
 		log.Printf("mg.NewMessage: %s\n", err)
 		log.Printf("from: %s\n", from)
+		log.Printf("to: %s\n\n", to)
 		log.Printf("subject: %s\n", subject)
 		log.Printf("body: %s\n", body)
-		log.Printf("to: %s\n\n", to)
 	}
+}
+
+// emailUser notifies the new user of their login username and password.
+func emailUser(username, first, last, email, password string) {
+	if mg == nil {
+		initMain()
+	}
+	from := "no-reply@" + mgDomain
+	subject := "NCWA forum login info"
+	to := email
+	plainBody := fmt.Sprintf(getPlainText(), first, last, username, password)
+	htmlBody := fmt.Sprintf(getHTMLText(), first, last, username, password)
+	message := mg.NewMessage(from, subject, plainBody, to)
+	message.SetHtml(htmlBody)
+	if mgUserBcc != "" {
+		message.AddBCC(mgUserBcc)
+	}
+	_, _, err := mg.Send(message)
+	if err != nil {
+		log.Printf("mg.NewMessage: %s\n", err)
+		log.Printf("from: %s\n", from)
+		log.Printf("to: %s\n\n", to)
+		log.Printf("subject: %s\n", subject)
+		log.Printf("body: %s\n", plainBody)
+	}
+}
+
+// getPlainText returns a plain body template for use with fmt.Sprintf()
+func getPlainText() string {
+	return `Hi %s %s,
+
+	Here is the login info that will allow you to access the NCWA discussion forums.
+	
+	URL: https://ncwawood.org/wp-login.php
+	Username: %s
+	Password: %s
+	
+	Michael Titus
+	NCWA Webmaster`
+}
+
+// getHTMLText returns an HTML body template for use with fmt.Sprintf()
+func getHTMLText() string {
+	return `<p>Hi %s %s,</p>
+
+	<p>Here is the login info that will allow you to access the NCWA discussion forums.</p>
+	
+	<p>URL: <a href="https://ncwawood.org/wp-login.php">https://ncwawood.org/wp-login.php</a><br/>
+	Username: %s<br/>
+	Password: %s</p>
+	
+	<p>Michael Titus<br/>
+	NCWA Webmaster</p>`
 }
