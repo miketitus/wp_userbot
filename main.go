@@ -136,10 +136,10 @@ func parseRecipients(body string) {
 					hadError = true
 					result = err.Error()
 				} else if id < 0 {
-					result = "Success"
-				} else {
 					hadError = true
 					result = "Unknown Error"
+				} else {
+					result = "Success"
 				}
 				resultBody = append(resultBody, fmt.Sprintf("%s: %s", r, result))
 			}
