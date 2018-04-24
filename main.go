@@ -38,6 +38,7 @@ func initMain() {
 	mgUserBcc = os.Getenv("MG_USER_BCC")
 	mgUserBot = os.Getenv("MG_USERBOT")
 	mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
+	fmt.Printf("mgAdmins: %s\n", mgAdmins)
 }
 
 // parseEmail is the main event loop, executing for each received email.
@@ -94,6 +95,7 @@ func senderIsAdmin(body string) bool {
 		sender = raw[6:]
 	}
 	for _, s := range mgAdmins {
+		fmt.Printf("checking %s against %s\n", s, sender)
 		if s == sender {
 			return true
 		}
