@@ -26,13 +26,20 @@ type User struct {
 }
 
 var wpBaseURL, wpPassword, wpUser string
+var wpPassLength uint8
 
 // initWordPress reads env vars for WordPress API.
 func initWordPress() {
+	rand.Seed(time.Now().Unix())
 	wpBaseURL = fmt.Sprintf("https://%s/", os.Getenv("WP_BASE_URL"))
 	wpPassword = os.Getenv("WP_PASSWORD")
 	wpUser = os.Getenv("WP_USER")
-	rand.Seed(time.Now().Unix())
+	length64, err := strconv.ParseUint(os.Getenv("WP_PASS_LENGTH"), 10, 8)
+	if err != nil {
+		log.Printf("strconv.ParseUint: %s\n", err)
+		length64 = 16
+	}
+	wpPassLength = uint8(length64)
 }
 
 // wpAPI sends a generic HTTP to the WordPress API.
@@ -101,7 +108,7 @@ func createUser(first, last, email string) (int, error) {
 	}
 	// build options string
 	username := strings.ToLower(first[:1] + last)
-	password := generatePassword(12)
+	password := generatePassword(wpPassLength)
 	opts := fmt.Sprintf("username=%s&first_name=%s&last_name=%s&email=%s&password=%s",
 		username, first, last, email, password)
 	// send user to WP
@@ -125,6 +132,7 @@ func createUser(first, last, email string) (int, error) {
 	ids := idRE.FindSubmatch(body)
 	if len(ids) < 2 {
 		// this should never happen
+		log.Printf("idRE.FindSubmatch found: %v\n", ids)
 		return -1, nil
 	}
 	id := string(ids[1])
