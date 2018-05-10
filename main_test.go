@@ -5,6 +5,14 @@ import (
 	"testing"
 )
 
+func TestWriteBody(t *testing.T) {
+	testBytes := []byte("Testing one, two, three.\n")
+	err := writeBody(testBytes)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestSenderIsAdmin(t *testing.T) {
 	if mgAdmins == nil {
 		initMain()
