@@ -36,7 +36,7 @@ func initWordPress() {
 	wpUser = os.Getenv("WP_USER")
 	length64, err := strconv.ParseUint(os.Getenv("WP_PASS_LENGTH"), 10, 8)
 	if err != nil {
-		log.Printf("strconv.ParseUint: %s\n", err)
+		log.Printf("initWordPress: %s\n", err)
 		length64 = 16
 	}
 	wpPassLength = uint8(length64)
@@ -53,10 +53,9 @@ func wpAPI(method, route, data string) (*http.Response, error) {
 		// query strings used for both GET and POST
 		route = route + "?" + data
 	}
-	log.Printf("route: %s\n", route)
 	request, err := http.NewRequest(method, route, body)
 	if err != nil {
-		log.Printf("http.NewRequest: %s\n", err)
+		log.Printf("wpAPI: %s\n", err)
 		return nil, err
 	}
 	request.SetBasicAuth(wpUser, wpPassword)
@@ -70,7 +69,7 @@ func wpAPI(method, route, data string) (*http.Response, error) {
 func userExists(email string) (bool, error) {
 	response, err := wpAPI("GET", "users", "context=edit&search="+email)
 	if err != nil {
-		log.Printf("client.Do: %s\n", response.Header)
+		log.Printf("userExists: %s\n", response.Header)
 		return false, err
 	}
 	users := usersFromResponse(response)
@@ -82,13 +81,13 @@ func usersFromResponse(response *http.Response) []User {
 	var users []User
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("ioutil.ReadAll: %s\n", err)
+		log.Printf("usersFromResponse: %s\n", err)
 		return users
 	}
 	// fmt.Printf("body: %s\n", body)
 	err = json.Unmarshal(body, &users)
 	if err != nil {
-		log.Printf("json.Unmarshall: %s\n", err)
+		log.Printf("usersFromResponse: %s\n", err)
 	}
 	// fmt.Printf("users: %v\n", users)
 	return users
@@ -114,7 +113,7 @@ func createUser(first, last, email string) (int, error) {
 	// send user to WP
 	response, err := wpAPI("POST", "users", opts)
 	if err != nil {
-		log.Printf("wpAPI: %s\n", err)
+		log.Printf("createUser: %s\n", err)
 		return -1, err
 	}
 	/* WP returns valid JSON upon user creation, but json.Unmarshall fails to parse
@@ -124,7 +123,7 @@ func createUser(first, last, email string) (int, error) {
 	*/
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("ioutil.ReadAll: %s\n", err)
+		log.Printf("createUser: %s\n", err)
 		return -1, err
 	}
 	// get id of new user
@@ -132,14 +131,14 @@ func createUser(first, last, email string) (int, error) {
 	ids := idRE.FindSubmatch(body)
 	if len(ids) < 2 {
 		// this should never happen
-		log.Printf("idRE.FindSubmatch found: %v\n", ids)
+		log.Printf("createUser found: %v\n", ids)
 		return -1, nil
 	}
 	id := string(ids[1])
 	id32, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		// this should never happen
-		log.Printf("strconv.ParseUint: %s\n", err)
+		log.Printf("createUser: %s\n", err)
 		return -1, err
 	}
 	emailUser(username, first, last, email, password)
@@ -171,12 +170,12 @@ func deleteUser(id int) {
 	route := fmt.Sprintf("users/%d", id)
 	response, err := wpAPI("DELETE", route, "force=true&reassign=1")
 	if err != nil {
-		log.Printf("wpAPI: %s\n", err)
+		log.Printf("deleteUser: %s\n", err)
 		return
 	}
 	_, err = ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("ioutil.ReadAll: %s\n", err)
+		log.Printf("deleteUser: %s\n", err)
 		return
 	}
 	return

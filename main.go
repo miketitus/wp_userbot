@@ -69,19 +69,19 @@ func getRequestBody(req *http.Request) (string, error) {
 	// read body
 	bodyBytes, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Printf("ioutil.ReadAll - %s\n", err)
+		log.Printf("getRequestBody: %s\n", err)
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
 	err = writeBody(bodyBytes)
 	if err != nil {
-		log.Printf("ioutil.WriteFile - %s\n", err)
+		log.Printf("getRequestBody: %s\n", err)
 		emailResults("writeBody Error", err.Error())
 	}
 	// decode body
 	rawBody, err := url.QueryUnescape(string(bodyBytes))
 	if err != nil {
-		log.Printf("url.QueryUnescape - %s\n", err)
+		log.Printf("getRequestBody: %s\n", err)
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
@@ -107,7 +107,6 @@ func senderIsAdmin(body string) bool {
 		sender = raw[6:]
 	}
 	for _, s := range mgAdmins {
-		fmt.Printf("checking %s against %s\n", s, sender)
 		if s == sender {
 			return true
 		}
@@ -206,7 +205,7 @@ func emailResults(subject string, body string) {
 	message := mg.NewMessage(from, subject, body, to)
 	_, _, err := mg.Send(message)
 	if err != nil {
-		log.Printf("mg.NewMessage: %s\n", err)
+		log.Printf("emailResults: %s\n", err)
 		log.Printf("from: %s\n", from)
 		log.Printf("to: %s\n\n", to)
 		log.Printf("subject: %s\n", subject)
@@ -231,7 +230,7 @@ func emailUser(username, first, last, email, password string) {
 	}
 	_, _, err := mg.Send(message)
 	if err != nil {
-		log.Printf("mg.NewMessage: %s\n", err)
+		log.Printf("emailUser: %s\n", err)
 		log.Printf("from: %s\n", from)
 		log.Printf("to: %s\n\n", to)
 		log.Printf("subject: %s\n", subject)
