@@ -38,29 +38,29 @@ func initMain() {
 	mgUserBcc = os.Getenv("MG_USER_BCC")
 	mgUserBot = os.Getenv("MG_USERBOT")
 	mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)
-	fmt.Printf("mgAdmins: %s\n", mgAdmins)
 }
 
 // parseEmail is the main event loop, executing for each received email.
 func parseEmail(w http.ResponseWriter, request *http.Request) {
-	log.Println()
-	log.Printf("Got: %s\n", request.Header)
-
+	log.Println("* * * start * * *")
+	log.Printf("Header: %s\n", request.Header)
 	// acknowledge POST from Mailgun
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(250) // SMTP OK
-
+	// decode request
 	body, err := getRequestBody(request)
 	if err != nil {
 		return
 	}
-
+	// validate request
 	if !senderIsAdmin(body) {
 		// ignore: spam, or a recipient hit "reply to all"
 		emailResults("Illegal Sender", body)
 		return
 	}
+	// process request
 	parseRecipients(body)
+	log.Println("* * * end * * *")
 }
 
 // getBody extracts and unescapes the email body from the Mailgun POST.
@@ -165,8 +165,8 @@ func parseRecipients(body string) {
 // getFields splits an email address into component strings, and cleans up the email address.
 // e.g. "John Doe <john@john.doe>" --> [john doe john@john.doe]
 func getFields(s string) []string {
-	fields := strings.Fields(s)
 	// first and/or last name is optional, but last field should always be the email field
+	fields := strings.Fields(s)
 	// cleanup email address
 	i := len(fields) - 1
 	if fields[i][0:1] == `<` {
@@ -179,12 +179,11 @@ func getFields(s string) []string {
 // isValidEmail verifies that a recipient email address is in valid format.
 // Uses a very simple regex designed to catch basic errors, but not nearly all edge cases.
 func isValidEmail(email string) bool {
-	// mimimal validation regex, could be a lot more complex
 	emailRE := regexp.MustCompile("[^@]+@[^@]+\\..+")
 	return emailRE.FindStringIndex(email) != nil
 }
 
-// emailResults notifies admins of successes and failures while trying to create users.
+// emailResults notifies admins of processing successes and failures.
 func emailResults(subject string, body string) {
 	if mg == nil {
 		initMain()
@@ -209,7 +208,7 @@ func emailUser(username, first, last, email, password string) {
 		initMain()
 	}
 	from := "no-reply@" + mgDomain
-	subject := "NCWA forum login info"
+	subject := "NCWA forum login info" // TODO
 	to := email
 	plainBody := fmt.Sprintf(getPlainText(), first, last, username, password)
 	htmlBody := fmt.Sprintf(getHTMLText(), first, last, username, password)
@@ -228,7 +227,7 @@ func emailUser(username, first, last, email, password string) {
 	}
 }
 
-// getPlainText returns a plain body template for use with fmt.Sprintf()
+// getPlainText returns a plain email template for use with fmt.Sprintf()
 func getPlainText() string {
 	return `Hi %s %s,
 
@@ -242,7 +241,7 @@ func getPlainText() string {
 	NCWA Webmaster`
 }
 
-// getHTMLText returns an HTML body template for use with fmt.Sprintf()
+// getHTMLText returns an HTML email template for use with fmt.Sprintf()
 func getHTMLText() string {
 	return `<p>Hi %s %s,</p>
 
