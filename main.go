@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"gopkg.in/mailgun/mailgun-go.v1"
 )
@@ -72,15 +73,26 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
+	err = writeBody(bodyBytes)
+	if err != nil {
+		log.Printf("ioutil.WriteFile - %s\n", err)
+		emailResults("writeBody Error", err.Error())
+	}
 	// decode body
-	rawBody := string(bodyBytes)
-	rawBody, err = url.QueryUnescape(rawBody)
+	rawBody, err := url.QueryUnescape(string(bodyBytes))
 	if err != nil {
 		log.Printf("url.QueryUnescape - %s\n", err)
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
 	return rawBody, nil
+}
+
+// writeBody writes raw body text to a temporary file for debugging.
+func writeBody(body []byte) error {
+	t := time.Now()
+	fname := fmt.Sprintf("/tmp/%d.txt", t.Unix())
+	return ioutil.WriteFile(fname, body, 0644)
 }
 
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
