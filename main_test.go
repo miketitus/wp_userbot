@@ -6,8 +6,7 @@ import (
 )
 
 func TestWriteBody(t *testing.T) {
-	testBytes := []byte("Testing one, two, three.\n")
-	err := writeBody(testBytes)
+	err := writeBody("Testing one, two, three.\n")
 	if err != nil {
 		t.Error(err)
 	}

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -73,26 +72,19 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
-	err = writeBody(bodyBytes)
+	err = writeBody(string(bodyBytes))
 	if err != nil {
 		log.Printf("getRequestBody: %s\n", err)
 		emailResults("writeBody Error", err.Error())
 	}
-	// decode body
-	rawBody, err := url.QueryUnescape(string(bodyBytes))
-	if err != nil {
-		log.Printf("getRequestBody: %s\n", err)
-		emailResults("Parse Error", err.Error())
-		return "", err
-	}
-	return rawBody, nil
+	return string(bodyBytes), nil // TODO
 }
 
 // writeBody writes raw body text to a temporary file for debugging.
-func writeBody(body []byte) error {
+func writeBody(body string) error {
 	t := time.Now()
 	fname := fmt.Sprintf("/tmp/%d.txt", t.Unix())
-	return ioutil.WriteFile(fname, body, 0644)
+	return ioutil.WriteFile(fname, []byte(body), 0644)
 }
 
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
