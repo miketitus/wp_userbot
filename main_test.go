@@ -13,26 +13,43 @@ func TestWriteBody(t *testing.T) {
 	}
 }
 
+func TestGetSender(t *testing.T) {
+	goodFrom := "[\"From\", \"%s\"], [\"More\"], \"Blah\""
+	s := "No Body <nobody@nowhere.xyz>"
+	test := fmt.Sprintf(goodFrom, s)
+	sender, err := getSender(test)
+	if err != nil {
+		t.Error(err)
+	} else if s != sender {
+		t.Errorf("'%s' does not match '%s'", s, sender)
+	}
+}
+
 func TestSenderIsAdmin(t *testing.T) {
-	badFrom := "[\"Frm\", \"%s\"],"
-	goodFrom := "[\"From\", \"%s\"],"
 	if mgAdmins == nil {
 		initMain()
 	}
 	for _, s := range mgAdmins {
-		test := fmt.Sprintf(goodFrom, s)
-		if !senderIsAdmin(test) {
+		if !senderIsAdmin(s) {
 			t.Errorf("'%s' was declared invalid", s)
 		}
 	}
 	s := "No Body <nobody@nowhere.xyz>"
-	test := fmt.Sprintf(goodFrom, s)
-	if senderIsAdmin(test) {
+	if senderIsAdmin(s) {
 		t.Errorf("'%s' was declared valid", s)
 	}
-	test = fmt.Sprintf(badFrom, s)
-	if senderIsAdmin(test) {
-		t.Errorf("'%s' was declared valid", s)
+}
+
+func TestGetRecipients(t *testing.T) {
+	test := "[\"To\", \"John1 Doe <john1@john.doe>, John2 Doe <john2@john.doe>\"], [\"Foo\", \"Bar\""
+	recipients := getRecipients(test)
+	f1 := getFields(recipients[0])
+	if f1[2] != "john1@john.doe" {
+		t.Errorf("f1[2] should not be %s", f1[2])
+	}
+	f2 := getFields(recipients[1])
+	if f2[2] != "john2@john.doe" {
+		t.Errorf("f2[2] should not be %s", f2[2])
 	}
 }
 
