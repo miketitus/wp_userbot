@@ -50,12 +50,14 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 	// decode request
 	body, err := getRequestBody(request)
 	if err != nil {
+		log.Println("* * * end, error * * *")
 		return
 	}
 	// validate request
 	if !senderIsAdmin(body) {
 		// ignore: spam, or a recipient hit "reply to all"
 		emailResults("Illegal Sender", body)
+		log.Println("* * * end, error * * *")
 		return
 	}
 	// process request
@@ -63,7 +65,9 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 	log.Println("* * * end * * *")
 }
 
-// getBody extracts and unescapes the email body from the Mailgun POST.
+// getBody extracts the email body from the Mailgun POST.
+// Mailgun sends in non-standard format, so net/mail can't be used for parsing :(
+// Strips file attachments from email body, if any.
 func getRequestBody(req *http.Request) (string, error) {
 	// read body
 	bodyBytes, err := ioutil.ReadAll(req.Body)
@@ -72,19 +76,30 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
-	err = writeBody(string(bodyBytes))
+	// strip attachments, if any, before converting to string
+	var idx int
+	var percentSign byte = 37 // % denotes start of binary data in email message
+	for idx = 0; idx < len(bodyBytes); idx++ {
+		if bodyBytes[idx] == percentSign {
+			bodyBytes = bodyBytes[:idx]
+			break
+		}
+	}
+	// write raw data for debugging
+	err = writeBody(bodyBytes)
 	if err != nil {
 		log.Printf("getRequestBody: %s\n", err)
 		emailResults("writeBody Error", err.Error())
 	}
-	return string(bodyBytes), nil // TODO
+	body := string(bodyBytes)
+	return body, nil
 }
 
 // writeBody writes raw body text to a temporary file for debugging.
-func writeBody(body string) error {
+func writeBody(body []byte) error {
 	t := time.Now()
 	fname := fmt.Sprintf("/tmp/%d.txt", t.Unix())
-	return ioutil.WriteFile(fname, []byte(body), 0644)
+	return ioutil.WriteFile(fname, body, 0644)
 }
 
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
