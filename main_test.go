@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+var from = "[\"From\", \"%s\"],"
+var to = "[\"To\", \"%s\"],"
+
 func TestWriteBody(t *testing.T) {
 	testBytes := []byte("Testing one, two, three.\n")
 	err := writeBody(testBytes)
@@ -14,17 +17,24 @@ func TestWriteBody(t *testing.T) {
 }
 
 func TestSenderIsAdmin(t *testing.T) {
+	badFrom := "[\"Frm\", \"%s\"],"
+	goodFrom := "[\"From\", \"%s\"],"
 	if mgAdmins == nil {
 		initMain()
 	}
 	for _, s := range mgAdmins {
-		test := fmt.Sprintf("&from=%s&", s)
+		test := fmt.Sprintf(goodFrom, s)
 		if !senderIsAdmin(test) {
 			t.Errorf("'%s' was declared invalid", s)
 		}
 	}
-	s := "&from=nobody@nowhere.xyz&"
-	if senderIsAdmin(s) {
+	s := "No Body <nobody@nowhere.xyz>"
+	test := fmt.Sprintf(goodFrom, s)
+	if senderIsAdmin(test) {
+		t.Errorf("'%s' was declared valid", s)
+	}
+	test = fmt.Sprintf(badFrom, s)
+	if senderIsAdmin(test) {
 		t.Errorf("'%s' was declared valid", s)
 	}
 }
@@ -82,5 +92,5 @@ func TestIsValidEmail(t *testing.T) {
 }
 
 func TestEmailUser(t *testing.T) {
-	emailUser("jdoe", "John", "Doe", "acct@mike-titus.com", "secret")
+	emailUser("jdoe", "John", "Doe", "acct@mike-titus.com", "secret") // TODO
 }

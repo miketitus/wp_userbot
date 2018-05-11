@@ -91,8 +91,7 @@ func getRequestBody(req *http.Request) (string, error) {
 		log.Printf("getRequestBody: %s\n", err)
 		emailResults("writeBody Error", err.Error())
 	}
-	body := string(bodyBytes)
-	return body, nil
+	return string(bodyBytes), nil
 }
 
 // writeBody writes raw body text to a temporary file for debugging.
@@ -105,14 +104,16 @@ func writeBody(body []byte) error {
 // senderIsAdmin verifies that the decoded email message came from an approved email address.
 func senderIsAdmin(body string) bool {
 	var sender string
-	senderRE := regexp.MustCompile("&from=([^&]*)")
+	senderRE := regexp.MustCompile("\"From\", \"(.+)\"")
 	raw := senderRE.FindString(body)
 	if raw == "" {
-		// this should never happen, but let's keep on truckin'
-		sender = raw
-	} else {
-		sender = raw[6:]
+		// this should never happen, unless Mailgun changes its format
+		msg := "senderIsAdmin: could not find sender"
+		log.Println(msg)
+		emailResults("Parse Error", msg)
+		return false
 	}
+	sender = raw[9 : len(raw)-1]
 	for _, s := range mgAdmins {
 		if s == sender {
 			return true
@@ -136,7 +137,7 @@ func isUserBot(fields []string) bool {
 func parseRecipients(body string) {
 	var hadError bool
 	var resultBody []string
-	recipientRE := regexp.MustCompile("To=([^&]*)")
+	recipientRE := regexp.MustCompile("\"To\"\\s\\s(.*)$")
 	raw := recipientRE.FindString(body)
 	recipients := strings.Split(raw[3:], ", ")
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
