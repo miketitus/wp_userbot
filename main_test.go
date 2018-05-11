@@ -5,9 +5,6 @@ import (
 	"testing"
 )
 
-var from = "[\"From\", \"%s\"],"
-var to = "[\"To\", \"%s\"],"
-
 func TestWriteBody(t *testing.T) {
 	testBytes := []byte("Testing one, two, three.\n")
 	err := writeBody(testBytes)
