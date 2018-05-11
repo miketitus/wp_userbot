@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -54,7 +55,12 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	// validate request
-	if !senderIsAdmin(body) {
+	sender, err := getSender(body)
+	if err != nil {
+		log.Println("* * * end, error * * *")
+		return
+	}
+	if !senderIsAdmin(sender) {
 		// ignore: spam, or a recipient hit "reply to all"
 		emailResults("Illegal Sender", body)
 		log.Println("* * * end, error * * *")
@@ -101,19 +107,24 @@ func writeBody(body []byte) error {
 	return ioutil.WriteFile(fname, body, 0644)
 }
 
-// senderIsAdmin verifies that the decoded email message came from an approved email address.
-func senderIsAdmin(body string) bool {
+// getSender parses email body to find the sending address.
+func getSender(body string) (string, error) {
 	var sender string
-	senderRE := regexp.MustCompile("\"From\", \"(.+)\"")
+	senderRE := regexp.MustCompile("\"From\", \"([^\\]]+)\"")
 	raw := senderRE.FindString(body)
 	if raw == "" {
 		// this should never happen, unless Mailgun changes its format
 		msg := "senderIsAdmin: could not find sender"
 		log.Println(msg)
-		emailResults("Parse Error", msg)
-		return false
+		emailResults("Parse Error", msg+"\n"+body)
+		return "", errors.New(msg)
 	}
 	sender = raw[9 : len(raw)-1]
+	return sender, nil
+}
+
+// senderIsAdmin verifies that the email message came from an approved email address.
+func senderIsAdmin(sender string) bool {
 	for _, s := range mgAdmins {
 		if s == sender {
 			return true
@@ -137,9 +148,7 @@ func isUserBot(fields []string) bool {
 func parseRecipients(body string) {
 	var hadError bool
 	var resultBody []string
-	recipientRE := regexp.MustCompile("\"To\"\\s\\s(.*)$")
-	raw := recipientRE.FindString(body)
-	recipients := strings.Split(raw[3:], ", ")
+	recipients := getRecipients(body)
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
 	for _, r := range recipients {
 		fields := getFields(r)
@@ -179,6 +188,14 @@ func parseRecipients(body string) {
 		resultSubject = "Success"
 	}
 	emailResults(resultSubject, strings.Join(resultBody, "\n"))
+}
+
+// getRecipients extracts a slice of email addresses from the email body.
+func getRecipients(body string) []string {
+	recipientRE := regexp.MustCompile("\"To\", \"([^\\]]+)\"")
+	raw := recipientRE.FindString(body)
+	recipients := strings.Split(raw[7:len(raw)-1], ", ")
+	return recipients
 }
 
 // getFields splits an email address into component strings, and cleans up the email address.
