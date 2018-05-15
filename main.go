@@ -82,6 +82,12 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
+	// write raw data for debugging
+	err = writeBody(bodyBytes)
+	if err != nil {
+		log.Printf("getRequestBody: %s\n", err)
+		emailResults("writeBody Error", err.Error())
+	}
 	// strip attachments, if any, before converting to string
 	var idx int
 	var percentSign byte = 37 // % denotes start of binary data in email message
@@ -90,12 +96,6 @@ func getRequestBody(req *http.Request) (string, error) {
 			bodyBytes = bodyBytes[:idx]
 			break
 		}
-	}
-	// write raw data for debugging
-	err = writeBody(bodyBytes)
-	if err != nil {
-		log.Printf("getRequestBody: %s\n", err)
-		emailResults("writeBody Error", err.Error())
 	}
 	return string(bodyBytes), nil
 }
