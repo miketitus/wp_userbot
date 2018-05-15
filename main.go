@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -109,17 +109,25 @@ func writeBody(body []byte) error {
 
 // getSender parses email body to find the sending address.
 func getSender(body string) (string, error) {
-	var sender string
-	senderRE := regexp.MustCompile("\"From\", \"([^\\]]+)\"")
-	raw := senderRE.FindString(body)
-	if raw == "" {
-		// this should never happen, unless Mailgun changes its format
-		msg := "senderIsAdmin: could not find sender"
-		log.Println(msg)
-		emailResults("Parse Error", msg+"\n"+body)
-		return "", errors.New(msg)
+	scanner := bufio.NewScanner(strings.NewReader(body))
+	// find "From"
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, "\"From\"") {
+			break
+		}
 	}
-	sender = raw[9 : len(raw)-1]
+	if err := scanner.Err(); err != nil {
+		log.Println(err)
+		emailResults("Parse Error", err.Error())
+		return "", err
+	}
+	// skip blank line
+	scanner.Scan()
+	_ = scanner.Text()
+	// read address
+	scanner.Scan()
+	sender := scanner.Text()
 	return sender, nil
 }
 
