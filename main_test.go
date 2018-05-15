@@ -1,9 +1,26 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"strings"
 	"testing"
 )
+
+var from = `Content-Disposition: form-data; name="From"
+
+%s`
+
+var to = `Content-Disposition: form-data; name="To"
+
+%s`
+
+func TestHex(t *testing.T) {
+	scanner := bufio.NewScanner(strings.NewReader(from))
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+}
 
 func TestWriteBody(t *testing.T) {
 	testBytes := []byte("Testing one, two, three.\n")
@@ -14,9 +31,8 @@ func TestWriteBody(t *testing.T) {
 }
 
 func TestGetSender(t *testing.T) {
-	goodFrom := "[\"From\", \"%s\"], [\"More\"], \"Blah\""
 	s := "No Body <nobody@nowhere.xyz>"
-	test := fmt.Sprintf(goodFrom, s)
+	test := fmt.Sprintf(from, s)
 	sender, err := getSender(test)
 	if err != nil {
 		t.Error(err)
@@ -41,8 +57,12 @@ func TestSenderIsAdmin(t *testing.T) {
 }
 
 func TestGetRecipients(t *testing.T) {
-	test := "[\"To\", \"John1 Doe <john1@john.doe>, John2 Doe <john2@john.doe>\"], [\"Foo\", \"Bar\""
-	recipients := getRecipients(test)
+	s := "John1 Doe <john1@john.doe>, John2 Doe <john2@john.doe>"
+	test := fmt.Sprintf(to, s)
+	recipients, err := getRecipients(test)
+	if err != nil {
+		t.Error(err)
+	}
 	f1 := getFields(recipients[0])
 	if f1[2] != "john1@john.doe" {
 		t.Errorf("f1[2] should not be %s", f1[2])
