@@ -118,7 +118,7 @@ func getSender(body string) (string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Println(err)
+		log.Printf("getSender: %s\n", err)
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
@@ -156,7 +156,10 @@ func isUserBot(fields []string) bool {
 func parseRecipients(body string) {
 	var hadError bool
 	var resultBody []string
-	recipients := getRecipients(body)
+	recipients, err := getRecipients(body)
+	if err != nil {
+		return
+	}
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
 	for _, r := range recipients {
 		fields := getFields(r)
@@ -199,11 +202,27 @@ func parseRecipients(body string) {
 }
 
 // getRecipients extracts a slice of email addresses from the email body.
-func getRecipients(body string) []string {
-	recipientRE := regexp.MustCompile("\"To\", \"([^\\]]+)\"")
-	raw := recipientRE.FindString(body)
-	recipients := strings.Split(raw[7:len(raw)-1], ", ")
-	return recipients
+func getRecipients(body string) ([]string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(body))
+	// find "To"
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasSuffix(line, "\"To\"") {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("getRecipients: %s\n", err)
+		emailResults("Parse Error", err.Error())
+		return nil, err
+	}
+	// skip blank line
+	scanner.Scan()
+	_ = scanner.Text()
+	// read recipients
+	scanner.Scan()
+	recipients := strings.Split(scanner.Text(), ", ")
+	return recipients, nil
 }
 
 // getFields splits an email address into component strings, and cleans up the email address.
