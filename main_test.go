@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -14,13 +12,6 @@ var from = `Content-Disposition: form-data; name="From"
 var to = `Content-Disposition: form-data; name="To"
 
 %s`
-
-func TestHex(t *testing.T) {
-	scanner := bufio.NewScanner(strings.NewReader(from))
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-}
 
 func TestWriteBody(t *testing.T) {
 	testBytes := []byte("Testing one, two, three.\n")
