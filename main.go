@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -82,20 +83,16 @@ func getRequestBody(req *http.Request) (string, error) {
 		emailResults("Parse Error", err.Error())
 		return "", err
 	}
+	// strip attachments, if any, before converting to string
+	idx := bytes.Index(bodyBytes, []byte("attachment-1"))
+	if idx >= 0 {
+		bodyBytes = bodyBytes[:idx]
+	}
 	// write raw data for debugging
 	err = writeBody(bodyBytes)
 	if err != nil {
 		log.Printf("getRequestBody: %s\n", err)
 		emailResults("writeBody Error", err.Error())
-	}
-	// strip attachments, if any, before converting to string
-	var idx int
-	var percentSign byte = 37 // % denotes start of binary data in email message
-	for idx = 0; idx < len(bodyBytes); idx++ {
-		if bodyBytes[idx] == percentSign {
-			bodyBytes = bodyBytes[:idx]
-			break
-		}
 	}
 	return string(bodyBytes), nil
 }
