@@ -117,5 +117,8 @@ func TestIsValidEmail(t *testing.T) {
 }
 
 func TestEmailUser(t *testing.T) {
-	emailUser("jdoe", "John", "Doe", "acct@mike-titus.com", "secret") // TODO
+	if mgAdmins == nil {
+		initMain()
+	}
+	emailUser("jdoe", "John", "Doe", mgAdmins[0], "secret")
 }
