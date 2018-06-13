@@ -16,7 +16,7 @@ import (
 )
 
 var mgAdmins []string
-var mgAPIKey, mgDomain, mgListenPort, mgPublicAPIKey, mgUserBcc, mgUserBot string
+var mgAPIKey, mgDomain, mgEmailSubject, mgListenPort, mgPublicAPIKey, mgUserBcc, mgUserBot string
 var mg mailgun.Mailgun
 
 // TODO HTTPS
@@ -35,6 +35,7 @@ func initMain() {
 	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
 	mgAPIKey = os.Getenv("MG_API_KEY")
 	mgDomain = os.Getenv("MG_DOMAIN")
+	mgEmailSubject = os.Getenv("MG_EMAIL_SUBJECT")
 	mgListenPort = os.Getenv("MG_LISTEN_PORT")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
 	mgUserBcc = os.Getenv("MG_USER_BCC")
@@ -268,7 +269,7 @@ func emailUser(username, first, last, email, password string) {
 		initMain()
 	}
 	from := "no-reply@" + mgDomain
-	subject := "NCWA forum login info" // TODO
+	subject := mgEmailSubject
 	to := email
 	plainBody := fmt.Sprintf(getPlainText(), first, last, username, password)
 	htmlBody := fmt.Sprintf(getHTMLText(), first, last, username, password)
