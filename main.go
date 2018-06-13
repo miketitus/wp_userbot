@@ -62,7 +62,7 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	if !senderIsAdmin(sender) {
-		// ignore: spam, or a recipient hit "reply to all"
+		// spam, or a recipient hit "reply to all"
 		emailResults("Illegal Sender", body)
 		log.Println("* * * end, error * * *")
 		return
@@ -73,7 +73,7 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 }
 
 // getBody extracts the email body from the Mailgun POST.
-// Mailgun sends in non-standard format, so net/mail can't be used for parsing :(
+// net/mail throws errors for some reason, so parse manually
 // Strips file attachments from email body, if any.
 func getRequestBody(req *http.Request) (string, error) {
 	// read body
@@ -161,11 +161,11 @@ func parseRecipients(body string) {
 	for _, r := range recipients {
 		fields := getFields(r)
 		if isUserBot(fields) {
-			continue // ignore
+			continue
 		} else if len(fields) == 3 {
 			// valid structure
 			if senderIsAdmin(fields[2]) {
-				continue // admin email, skip
+				continue
 			} else if !isValidEmail(fields[2]) {
 				hadError = true
 				resultBody = append(resultBody, fmt.Sprintf("%s: Invalid email", r))
@@ -237,7 +237,7 @@ func getFields(s string) []string {
 }
 
 // isValidEmail verifies that a recipient email address is in valid format.
-// Uses a very simple regex designed to catch basic errors, but not nearly all edge cases.
+// Uses a very simple regex designed to catch basic errors, but not many edge cases.
 func isValidEmail(email string) bool {
 	emailRE := regexp.MustCompile("[^@]+@[^@]+\\..+")
 	return emailRE.FindStringIndex(email) != nil
