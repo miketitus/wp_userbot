@@ -16,7 +16,7 @@ import (
 )
 
 var mgAdmins []string
-var mgAPIKey, mgDomain, mgEmailSubject, mgListenPort, mgPublicAPIKey, mgUserBcc, mgUserBot string
+var mgAPIKey, mgDomain, mgEmailSubject, mgListenPort, mgPublicAPIKey, mgTestEmail, mgUserBcc, mgUserBot string
 var mg mailgun.Mailgun
 
 // TODO HTTPS
@@ -38,6 +38,7 @@ func initMain() {
 	mgEmailSubject = os.Getenv("MG_EMAIL_SUBJECT")
 	mgListenPort = os.Getenv("MG_LISTEN_PORT")
 	mgPublicAPIKey = os.Getenv("MG_PUBLIC_API_KEY")
+	mgTestEmail = os.Getenv("MG_TEST_EMAIL")
 	mgUserBcc = os.Getenv("MG_USER_BCC")
 	mgUserBot = os.Getenv("MG_USERBOT")
 	mg = mailgun.NewMailgun(mgDomain, mgAPIKey, mgPublicAPIKey)

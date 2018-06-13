@@ -35,7 +35,10 @@ func TestUserExists(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	id, err := createUser("Aaron", "Aardvark", "acct@mike-titus.com") // TODO
+	if mgTestEmail == "" {
+		initMain()
+	}
+	id, err := createUser("Aaron", "Aardvark", mgTestEmail)
 	if err != nil {
 		t.Error(err)
 	} else if id < 0 {
