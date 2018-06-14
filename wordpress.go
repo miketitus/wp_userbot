@@ -96,20 +96,20 @@ func usersFromResponse(response *http.Response) []User {
 // createUser creates a new user account (primary key is email).
 // It parses the response to make sure creation was successful and
 // returns the user id if successful, or -1 if unsuccessful.
-func createUser(first, last, email string) (int, error) {
+func createUser(email Email) (int, error) {
 	// ensure user doesn't already exist
-	exists, err := userExists(email)
+	exists, err := userExists(email.Address)
 	if err != nil {
 		return -1, err
 	} else if exists {
-		msg := fmt.Sprintf("a user already exists with email: %s", email)
+		msg := fmt.Sprintf("a user already exists with email: %s", email.Address)
 		return -1, errors.New(msg)
 	}
 	// build options string
-	username := strings.ToLower(first[:1] + last)
+	username := strings.ToLower(email.First[:1] + email.Last)
 	password := generatePassword(wpPassLength)
 	opts := fmt.Sprintf("username=%s&first_name=%s&last_name=%s&email=%s&password=%s",
-		username, first, last, email, password)
+		username, email.First, email.Last, email.Address, password)
 	// send user to WP
 	response, err := wpAPI("POST", "users", opts)
 	if err != nil {
@@ -141,7 +141,7 @@ func createUser(first, last, email string) (int, error) {
 		log.Printf("createUser: %s\n", err)
 		return -1, err
 	}
-	emailUser(username, first, last, email, password)
+	emailUser(email, username, password)
 	return int(id32), err
 }
 

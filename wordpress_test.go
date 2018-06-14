@@ -18,8 +18,7 @@ func TestUserExists(t *testing.T) {
 		initMain()
 	}
 	for _, user := range mgAdmins {
-		fields := getFields(user)
-		exists, err := userExists(fields[2])
+		exists, err := userExists(user.Address)
 		if err != nil {
 			t.Error(err)
 		} else if !exists {
@@ -38,7 +37,13 @@ func TestCreateUser(t *testing.T) {
 	if mgTestEmail == "" {
 		initMain()
 	}
-	id, err := createUser("Aaron", "Aardvark", mgTestEmail)
+	user := "Aaron Aardvark <" + mgTestEmail + ">"
+	email, err := getEmail(user)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("user = %v\n", user)
+	id, err := createUser(email)
 	if err != nil {
 		t.Error(err)
 	} else if id < 0 {

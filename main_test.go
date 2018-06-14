@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
@@ -23,11 +24,15 @@ func TestWriteBody(t *testing.T) {
 
 func TestGetSender(t *testing.T) {
 	s := "No Body <nobody@nowhere.xyz>"
+	e, err := getEmail(s)
+	if err != nil {
+		t.Error(err)
+	}
 	test := fmt.Sprintf(from, s)
 	sender, err := getSender(test)
 	if err != nil {
 		t.Error(err)
-	} else if s != sender {
+	} else if e.Address != sender.Address {
 		t.Errorf("'%s' does not match '%s'", s, sender)
 	}
 }
@@ -41,8 +46,10 @@ func TestSenderIsAdmin(t *testing.T) {
 			t.Errorf("'%s' was declared invalid", s)
 		}
 	}
-	s := "No Body <nobody@nowhere.xyz>"
-	if senderIsAdmin(s) {
+	s, err := getEmail("No Body <nobody@nowhere.xyz>")
+	if err != nil {
+		t.Error(err)
+	} else if senderIsAdmin(s) {
 		t.Errorf("'%s' was declared valid", s)
 	}
 }
@@ -54,50 +61,36 @@ func TestGetRecipients(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	f1 := getFields(recipients[0])
-	if f1[2] != "john1@john.doe" {
-		t.Errorf("f1[2] should not be %s", f1[2])
+	e1, err := getEmail(recipients[0])
+	if err != nil {
+		t.Error(err)
+	} else if e1.Address != "john1@john.doe" {
+		t.Errorf("e1.Address should not be %s", e1.Address)
 	}
-	f2 := getFields(recipients[1])
-	if f2[2] != "john2@john.doe" {
-		t.Errorf("f2[2] should not be %s", f2[2])
-	}
-}
-
-func TestGetFields(t *testing.T) {
-	var f []string
-	// one field
-	f = getFields("<john@john.doe>")
-	if f[0] != "john@john.doe" {
-		t.Errorf("f[0] should not be %s", f[0])
-	}
-	// two fields
-	f = getFields("John <john@john.doe>")
-	if f[0] != "John" {
-		t.Errorf("f[0] should not be %s", f[0])
-	} else if f[1] != "john@john.doe" {
-		t.Errorf("f[1] should not be %s", f[2])
-	}
-	// three fields
-	f = getFields("John Doe <john@john.doe>")
-	if f[0] != "John" {
-		t.Errorf("f[0] should not be %s", f[0])
-	} else if f[1] != "Doe" {
-		t.Errorf("f[1] should not be %s", f[1])
-	} else if f[2] != "john@john.doe" {
-		t.Errorf("f[2] should not be %s", f[2])
+	e2, err := getEmail(recipients[1])
+	if err != nil {
+		t.Error(err)
+	} else if e2.Address != "john2@john.doe" {
+		t.Errorf("e2.Address should not be %s", e2.Address)
 	}
 }
 
-func TestIsUserBot(t *testing.T) {
-	s := make([]string, 1, 1)
-	s[0] = mgUserBot
-	if !isUserBot(s) {
-		t.Errorf("'%s' was declared to not be a userbot", s)
+func TestGetEmail(t *testing.T) {
+	// test valid format
+	email, err := getEmail("John Doe <john@john.doe>")
+	if err != nil {
+		t.Error(err)
+	} else if email.First != "John" {
+		t.Errorf("First should not be %s", email.First)
+	} else if email.Last != "Doe" {
+		t.Errorf("Last should not be %s", email.Last)
+	} else if email.Address != "john@john.doe" {
+		t.Errorf("Address should not be %s", email.Address)
 	}
-	s[0] = "foo@abc.xyz"
-	if isUserBot(s) {
-		t.Errorf("'%s' was declared to be a userbot", s)
+	// test invalid format
+	_, err = getEmail("John <john@john.doe>")
+	if err == nil {
+		t.Error("getEmail() failed to return an error")
 	}
 }
 
@@ -120,5 +113,37 @@ func TestEmailUser(t *testing.T) {
 	if mgAdmins == nil {
 		initMain()
 	}
-	emailUser("jdoe", "John", "Doe", mgAdmins[0], "secret")
+	email := Email{"John", "Doe", mgAdmins[0].Address}
+	emailUser(email, "jdoe", "secret")
+}
+
+func TestParsing(t *testing.T) {
+	body, err := readTestFile()
+	if err != nil {
+		t.Error(err)
+	}
+	sender, err := getSender(body)
+	if err != nil {
+		t.Error(err)
+	}
+	if !senderIsAdmin(sender) {
+		t.Errorf("'%s' was declared to not be an admin", sender)
+	}
+	recipients, err := getRecipients(body)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, r := range recipients {
+		if !isValidEmail(r) {
+			t.Errorf("'%s' was declared to not be a valid email address", r)
+		}
+	}
+}
+
+func readTestFile() (string, error) {
+	bytes, err := ioutil.ReadFile("./assets/1527531333.txt")
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), err
 }

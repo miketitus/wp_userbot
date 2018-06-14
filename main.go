@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,7 +16,14 @@ import (
 	"gopkg.in/mailgun/mailgun-go.v1"
 )
 
-var mgAdmins []string
+// Email stores a user's name and email address
+type Email struct {
+	First   string
+	Last    string
+	Address string
+}
+
+var mgAdmins []Email
 var mgAPIKey, mgDomain, mgEmailSubject, mgListenPort, mgPublicAPIKey, mgTestEmail, mgUserBcc, mgUserBot string
 var mg mailgun.Mailgun
 
@@ -32,7 +40,14 @@ func main() {
 
 // initMain reads env vars for Mailgun API.
 func initMain() {
-	mgAdmins = strings.Split(os.Getenv("MG_ADMINS"), ", ")
+	admins := strings.Split(os.Getenv("MG_ADMINS"), ", ")
+	for _, a := range admins {
+		email, err := getEmail(a)
+		if err != nil {
+			log.Fatalf("invalid admin email: %s\n", a)
+		}
+		mgAdmins = append(mgAdmins, email)
+	}
 	mgAPIKey = os.Getenv("MG_API_KEY")
 	mgDomain = os.Getenv("MG_DOMAIN")
 	mgEmailSubject = os.Getenv("MG_EMAIL_SUBJECT")
@@ -107,7 +122,7 @@ func writeBody(body []byte) error {
 }
 
 // getSender parses email body to find the sending address.
-func getSender(body string) (string, error) {
+func getSender(body string) (Email, error) {
 	scanner := bufio.NewScanner(strings.NewReader(body))
 	// find "From"
 	for scanner.Scan() {
@@ -119,31 +134,20 @@ func getSender(body string) (string, error) {
 	if err := scanner.Err(); err != nil {
 		log.Printf("getSender: %s\n", err)
 		emailResults("Parse Error", err.Error())
-		return "", err
+		return Email{}, err
 	}
 	// skip blank line
 	scanner.Scan()
 	_ = scanner.Text()
 	// read address
 	scanner.Scan()
-	sender := scanner.Text()
-	return sender, nil
+	return getEmail(scanner.Text())
 }
 
 // senderIsAdmin verifies that the email message came from an approved email address.
-func senderIsAdmin(sender string) bool {
+func senderIsAdmin(sender Email) bool {
 	for _, s := range mgAdmins {
-		if s == sender {
-			return true
-		}
-	}
-	return false
-}
-
-// isUserBot is used to detect and ignore the userbot while processing recipient addresses.
-func isUserBot(fields []string) bool {
-	for _, f := range fields {
-		if f == mgUserBot {
+		if s.Address == sender.Address {
 			return true
 		}
 	}
@@ -161,19 +165,23 @@ func parseRecipients(body string) {
 	}
 	resultBody = append(resultBody, fmt.Sprintf("Recipient list: %s", recipients))
 	for _, r := range recipients {
-		fields := getFields(r)
-		if isUserBot(fields) {
+		email, err := getEmail(r)
+		if err != nil {
+			// error, invalid structure TODO
+			hadError = true
+			resultBody = append(resultBody, fmt.Sprintf("%s: Invalid format", r))
+		} else if email.Address == mgUserBot {
+			// ignore userbot recipient (might be in To: or Cc: fields)
 			continue
-		} else if len(fields) == 3 {
-			// valid structure
-			if senderIsAdmin(fields[2]) {
+		} else {
+			if senderIsAdmin(email) {
 				continue
-			} else if !isValidEmail(fields[2]) {
+			} else if !isValidEmail(email.Address) {
 				hadError = true
 				resultBody = append(resultBody, fmt.Sprintf("%s: Invalid email", r))
 			} else {
 				var result string
-				id, err := createUser(fields[0], fields[1], fields[2])
+				id, err := createUser(email)
 				if err != nil {
 					hadError = true
 					result = err.Error()
@@ -185,10 +193,6 @@ func parseRecipients(body string) {
 				}
 				resultBody = append(resultBody, fmt.Sprintf("%s: %s", r, result))
 			}
-		} else {
-			// error, invalid structure
-			hadError = true
-			resultBody = append(resultBody, fmt.Sprintf("%s: Invalid format", r))
 		}
 	}
 	var resultSubject string
@@ -224,18 +228,26 @@ func getRecipients(body string) ([]string, error) {
 	return recipients, nil
 }
 
-// getFields splits an email address into component strings, and cleans up the email address.
-// e.g. "John Doe <john@john.doe>" --> [john doe john@john.doe]
-func getFields(s string) []string {
-	// first and/or last name is optional, but last field should always be the email field
+// getEmail creates an email address object from a string.
+// e.g. "John Doe <john@john.doe>" --> {john doe john@john.doe}
+// first and last names are optional, but the last field should always be the email address
+func getEmail(s string) (Email, error) {
+	email := Email{}
 	fields := strings.Fields(s)
-	// cleanup email address
-	i := len(fields) - 1
-	if fields[i][0:1] == `<` {
-		end := len(fields[i]) - 1
-		fields[i] = fields[i][1:end]
+	if len(fields) != 3 {
+		// we need complete name to create a WordPress user
+		msg := fmt.Sprintf("%s: Invalid format", s)
+		return email, errors.New(msg)
 	}
-	return fields
+	email.First = fields[0]
+	email.Last = fields[1]
+	email.Address = fields[2]
+	// cleanup email address
+	if email.Address[0:1] == `<` {
+		end := len(email.Address) - 1
+		email.Address = email.Address[1:end]
+	}
+	return email, nil
 }
 
 // isValidEmail verifies that a recipient email address is in valid format.
@@ -265,15 +277,15 @@ func emailResults(subject string, body string) {
 }
 
 // emailUser notifies the new user of their login username and password.
-func emailUser(username, first, last, email, password string) {
+func emailUser(email Email, username, password string) {
 	if mg == nil {
 		initMain()
 	}
 	from := "no-reply@" + mgDomain
 	subject := mgEmailSubject
-	to := email
-	plainBody := fmt.Sprintf(getPlainText(), first, last, username, password)
-	htmlBody := fmt.Sprintf(getHTMLText(), first, last, username, password)
+	to := email.Address
+	plainBody := fmt.Sprintf(getPlainText(), email.First, email.Last, username, password)
+	htmlBody := fmt.Sprintf(getHTMLText(), email.First, email.Last, username, password)
 	message := mg.NewMessage(from, subject, plainBody, to)
 	message.SetHtml(htmlBody)
 	if mgUserBcc != "" {
