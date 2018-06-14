@@ -69,19 +69,19 @@ func parseEmail(w http.ResponseWriter, request *http.Request) {
 	// decode request
 	body, err := getRequestBody(request)
 	if err != nil {
-		log.Println("* * * end, error * * *")
+		log.Println("* * * end, getRequestBody() error * * *")
 		return
 	}
 	// validate request
 	sender, err := getSender(body)
 	if err != nil {
-		log.Println("* * * end, error * * *")
+		log.Println("* * * end, getSender() error * * *")
 		return
 	}
 	if !senderIsAdmin(sender) {
 		// spam, or a recipient hit "reply to all"
 		emailResults("Illegal Sender", body)
-		log.Println("* * * end, error * * *")
+		log.Println("* * * end, senderIsAdmin() error * * *")
 		return
 	}
 	// process request
@@ -147,6 +147,7 @@ func getSender(body string) (Email, error) {
 // senderIsAdmin verifies that the email message came from an approved email address.
 func senderIsAdmin(sender Email) bool {
 	for _, s := range mgAdmins {
+		log.Printf("comparing '%s' to '%s'\n", s.Address, sender.Address)
 		if s.Address == sender.Address {
 			return true
 		}
