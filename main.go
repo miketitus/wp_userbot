@@ -167,7 +167,7 @@ func parseRecipients(body string) {
 	for _, r := range recipients {
 		email, err := getEmail(r)
 		if err != nil {
-			// error, invalid structure TODO
+			// error, invalid structure
 			hadError = true
 			resultBody = append(resultBody, fmt.Sprintf("%s: Invalid format", r))
 		} else if email.Address == mgUserBot {
