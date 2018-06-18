@@ -118,7 +118,7 @@ func TestEmailUser(t *testing.T) {
 }
 
 func TestParsing(t *testing.T) {
-	testFile := "./assets/152753133.txt"
+	testFile := "./assets/1527531333.txt"
 	body, err := readTestFile(testFile)
 	if err != nil {
 		// don't fail test, just return
