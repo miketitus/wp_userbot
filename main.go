@@ -233,7 +233,6 @@ func getRecipients(body string) ([]string, error) {
 // e.g. "John Doe <john@john.doe>" --> {john doe john@john.doe}
 // first and last names are optional, but the last field should always be the email address
 func getEmail(s string) (Email, error) {
-	log.Printf("getEmail: '%s'\n", s)
 	email := Email{}
 	fields := strings.Fields(s)
 	if len(fields) != 3 {
