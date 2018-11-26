@@ -117,7 +117,7 @@ func getRequestBody(req *http.Request) (string, error) {
 // writeBody writes raw body text to a temporary file for debugging.
 func writeBody(body []byte) error {
 	t := time.Now()
-	fname := fmt.Sprintf("/tmp/%d.txt", t.Unix())
+	fname := fmt.Sprintf("/var/log/userbot/%d.txt", t.Unix())
 	return ioutil.WriteFile(fname, body, 0644)
 }
 
@@ -223,9 +223,15 @@ func getRecipients(body string) ([]string, error) {
 	// skip blank line
 	scanner.Scan()
 	_ = scanner.Text()
-	// read recipients
+	// read and clean recipients
+	var recipients []string
 	scanner.Scan()
-	recipients := strings.Split(scanner.Text(), ", ")
+	rawRecipients := strings.Split(scanner.Text(), ",")
+	for _, r := range rawRecipients {
+		r = strings.Replace(r, "\"", "", -1)
+		r = strings.TrimSpace(r)
+		recipients = append(recipients, r)
+	}
 	return recipients, nil
 }
 
